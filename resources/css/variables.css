@@ -1,0 +1,26 @@
+/* resources/css/variables.css */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap');
+
+:root {
+    /* --- Tipografia --- */
+    --font-ui: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace; /* Essencial para Timers e Qtd */
+
+    /* --- Paleta KDS (Alto Contraste) --- */
+    --kds-bg: #09090b;       /* Quase preto absoluto */
+    --kds-card: #18181b;     /* Cinza muito escuro */
+    --kds-border: #27272a;   
+    
+    /* --- Cores Semânticas de Status --- */
+    --status-new-bg: #27272a;
+    --status-new-border: #71717a;
+    
+    --status-cooking-bg: #172554; /* Azul Profundo */
+    --status-cooking-border: #3b82f6;
+    
+    --status-late-bg: #450a0a;    /* Vermelho Profundo (Para atrasos) */
+    --status-late-border: #ef4444;
+
+    --text-primary: #f4f4f5;
+    --text-secondary: #a1a1aa;
+}
