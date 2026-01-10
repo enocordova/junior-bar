@@ -10,7 +10,7 @@
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     .animate-fade-in-up { animation: fadeInUp 0.3s ease-out forwards; }
     
-    /* Input Autocomplete Fix para Dark Mode */
+    /* Input Autocomplete Fix */
     input:-webkit-autofill,
     input:-webkit-autofill:hover, 
     input:-webkit-autofill:focus, 
@@ -20,17 +20,12 @@
     }
 </style>
 
-{{-- CORREÇÃO DE SCROLL: Altura calculada (100vh - 90px do layout global) --}}
 <div x-data="gerenteApp()" x-init="init()" class="h-[calc(100vh-90px)] flex flex-col overflow-hidden no-select relative">
     
-    {{-- HEADER PADRONIZADO (Cinza Escuro + Verde) --}}
+    {{-- HEADER --}}
     <div class="h-16 bg-[#4d4a52] border-b border-gray-700 px-6 flex justify-between items-center shrink-0 z-20 shadow-md">
         <div class="flex items-center gap-6">
-            <h1 class="text-xl font-black tracking-tight text-[#7ed957]">
-                GERENTE 
-            </h1>
-            
-            {{-- Indicadores Dark --}}
+            <h1 class="text-xl font-black tracking-tight text-[#7ed957]">GERENTE</h1>
             <div class="hidden md:flex gap-3 border-l border-gray-600 pl-6">
                 <div class="flex items-center gap-2 px-3 py-1 bg-[#18181b] rounded-md border border-gray-700">
                     <div class="w-2 h-2 rounded-full bg-[#7ed957]"></div>
@@ -42,8 +37,6 @@
                 </div>
             </div>
         </div>
-        
-        {{-- Status Sistema --}}
         <div class="flex items-center gap-4">
             <div class="text-right">
                 <div class="text-xl font-black font-mono leading-none text-white tracking-widest" x-text="clock"></div>
@@ -54,26 +47,22 @@
         </div>
     </div>
 
-    {{-- LOADING STATE (Dark) --}}
+    {{-- LOADING --}}
     <div x-show="!ready" class="flex-1 flex flex-col items-center justify-center text-gray-500 bg-[#0c0c0e]">
         <div class="w-12 h-12 border-4 border-gray-800 border-t-[#7ed957] rounded-full animate-spin mb-4"></div>
-        <span class="text-xs font-bold uppercase tracking-widest animate-pulse">Sincronizando Mesas...</span>
+        <span class="text-xs font-bold uppercase tracking-widest animate-pulse">Sincronizando...</span>
     </div>
 
-    {{-- GRID DE MESAS (Dark) --}}
+    {{-- GRID DE MESAS --}}
     <div x-show="ready" class="flex-1 overflow-y-auto p-4 scrollbar-hide bg-[#0c0c0e]" style="scrollbar-width: none; display: none;">
-        
-        {{-- Aviso se não houver mesas cadastradas --}}
         <template x-if="mesas.length === 0">
             <div class="flex flex-col items-center justify-center h-full text-gray-500 opacity-50">
-                <svg class="w-16 h-16 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16M4 18h16" /></svg>
                 <span class="text-sm font-bold uppercase tracking-widest">Nenhuma mesa configurada</span>
             </div>
         </template>
 
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 pb-20">
             <template x-for="mesa in mesas" :key="mesa.numero">
-                {{-- O JS controla as cores de borda via getMesaClasses --}}
                 <div @click="abrirMesa(mesa)" 
                      class="relative rounded-xl p-3 flex flex-col justify-between transition-all duration-200 h-32 border-2 bg-[#18181b]" 
                      :class="getMesaClasses(mesa)">
@@ -81,7 +70,6 @@
                     <div class="flex justify-between items-start">
                         <div class="flex flex-col">
                             <span class="text-[10px] font-black uppercase tracking-widest opacity-60 text-gray-400">Mesa</span>
-                            {{-- Se tiver Label (ex: VIP), mostra --}}
                             <template x-if="mesa.label">
                                 <span class="text-[9px] font-bold text-[#efa324] uppercase tracking-wider" x-text="mesa.label"></span>
                             </template>
@@ -89,7 +77,6 @@
                         <span class="text-xl font-black font-mono leading-none text-white" x-text="mesa.numero"></span>
                     </div>
                     
-                    {{-- Caso Ocupada --}}
                     <template x-if="mesa.pedidos.length > 0">
                         <div class="flex flex-col items-end">
                             <span class="text-lg font-black font-mono tracking-tight text-[#7ed957]" x-text="'€ ' + mesa.total.toFixed(2)"></span>
@@ -100,7 +87,6 @@
                         </div>
                     </template>
                     
-                    {{-- Caso Livre --}}
                     <template x-if="mesa.pedidos.length === 0">
                         <div class="absolute inset-0 flex items-center justify-center opacity-20">
                             <div class="text-center">
@@ -115,14 +101,14 @@
     </div>
 
     {{-- =======================================================================
-         MODAL DETALHES (DARK THEME)
+         MODAL DETALHES UNIFICADO (COM RESPIRO E STATUS)
          ======================================================================= --}}
     <div x-show="mesaSelecionada" 
-         class="fixed inset-0 z-[55] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4" 
+         class="fixed inset-0 z-[55] flex items-end sm:items-center justify-center bg-black/90 backdrop-blur-sm p-0 sm:p-4" 
          x-transition.opacity 
          style="display: none;">
         
-        <div @click.away="mesaSelecionada = null" class="bg-[#18181b] w-full max-w-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[90vh] sm:h-auto sm:max-h-[85vh] animate-fade-in-up border border-gray-800">
+        <div @click.away="mesaSelecionada = null" class="bg-[#18181b] w-full max-w-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[95vh] sm:h-auto sm:max-h-[85vh] animate-fade-in-up border border-gray-800">
             
             {{-- Header Modal --}}
             <div class="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-[#202025] shrink-0">
@@ -133,57 +119,73 @@
                 <button @click="mesaSelecionada = null" class="w-10 h-10 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center font-bold text-gray-400 hover:text-white transition-colors">✕</button>
             </div>
 
-            {{-- Lista de Pedidos --}}
-            <div class="flex-1 overflow-y-auto p-6 space-y-6 bg-[#18181b]">
+            {{-- LISTA DE ITENS AGRUPADOS --}}
+            <div class="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#18181b] scrollbar-hide">
                 <template x-if="mesaSelecionada">
-                    <div>
-                        {{-- Estado Vazio --}}
-                        <div x-show="mesaSelecionada.pedidos.length === 0" class="flex flex-col items-center justify-center py-10 text-gray-600">
-                            <div class="w-16 h-16 bg-gray-800/50 rounded-full flex items-center justify-center mb-4">
-                                <svg class="w-8 h-8 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                            </div>
+                    <div class="space-y-3"> {{-- AUMENTADO GAP PARA RESPIRO --}}
+                        
+                        <div x-show="itensConsolidados.length === 0" class="flex flex-col items-center justify-center py-10 text-gray-600">
                             <p class="text-sm font-bold uppercase tracking-wider">Mesa sem pedidos ativos</p>
                         </div>
 
-                        <div class="space-y-6">
-                            <template x-for="pedido in mesaSelecionada.pedidos" :key="pedido.id">
-                                <div class="relative pl-4 border-l-2 border-gray-700">
-                                    <div class="flex items-center gap-2 mb-3">
-                                        <span class="bg-gray-800 text-gray-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider" x-text="'#' + pedido.id"></span>
-                                        <span class="text-xs font-bold text-gray-500" x-text="formatTime(pedido.created_at)"></span>
-                                        <span class="ml-auto text-[10px] font-bold px-2 py-0.5 rounded border uppercase" 
-                                              :class="{
-                                                  'bg-[#efa324]/10 text-[#efa324] border-[#efa324]/20': pedido.status==='pendente', 
-                                                  'bg-[#bf7854]/10 text-[#bf7854] border-[#bf7854]/20': pedido.status==='preparo', 
-                                                  'bg-[#7ed957]/10 text-[#7ed957] border-[#7ed957]/20': pedido.status==='pronto'
-                                              }" 
-                                              x-text="pedido.status"></span>
-                                    </div>
-                                    <ul class="space-y-3">
-                                        <template x-for="item in pedido.itens" :key="item.id">
-                                            <div class="flex justify-between items-center group bg-[#202025] p-3 rounded-xl border border-transparent hover:border-gray-600 transition-colors">
-                                                <div class="flex gap-3 items-center">
-                                                    <button @click="abrirEdicaoItem(item)" class="w-10 h-10 rounded-lg bg-[#2a2a30] border border-gray-700 text-gray-400 hover:text-white hover:border-[#7ed957] flex items-center justify-center transition-all shadow-sm">
-                                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                                    </button>
-                                                    <div>
-                                                        <div class="flex items-baseline gap-2">
-                                                            <span class="font-black text-lg text-white" x-text="item.quantidade + 'x'"></span>
-                                                            <span class="font-medium text-gray-300" x-text="item.nome_produto"></span>
-                                                        </div>
-                                                        <template x-if="item.observacao"><div class="text-xs text-[#efa324] italic" x-text="item.observacao"></div></template>
-                                                    </div>
-                                                </div>
-                                                <div class="flex flex-col items-end">
-                                                    <span class="font-mono font-bold text-gray-400" x-text="'€ ' + (item.preco * item.quantidade).toFixed(2)"></span>
-                                                    <button @click="removerItem(item.id)" class="text-[10px] text-red-500 uppercase font-bold hover:text-red-400 mt-1">Excluir</button>
-                                                </div>
+                        <template x-for="item in itensConsolidados" :key="item.chaveUnica">
+                            {{-- CARD DO ITEM (Visual Refinado) --}}
+                            <div class="flex flex-col group bg-[#202025] rounded-xl border border-gray-800 hover:border-gray-600 transition-all shadow-sm relative overflow-hidden">
+                                
+                                <div class="p-4 flex justify-between items-start"> {{-- AUMENTADO PADDING --}}
+                                    <div class="flex gap-4 items-start w-full">
+                                        
+                                        {{-- Botão Editar --}}
+                                        <button @click="abrirEdicaoLote(item)" class="shrink-0 w-12 h-12 rounded-xl bg-[#2a2a30] border border-gray-700 text-gray-400 hover:text-white hover:border-[#7ed957] flex items-center justify-center transition-all shadow-sm active:scale-95 group-hover:bg-[#33333a]">
+                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                        </button>
+                                        
+                                        <div class="flex-1">
+                                            <div class="flex items-baseline gap-2 flex-wrap">
+                                                <span class="font-black text-2xl text-white" x-text="item.quantidade + 'x'"></span>
+                                                <span class="font-bold text-gray-200 text-lg leading-tight" x-text="item.nome_produto"></span>
                                             </div>
-                                        </template>
-                                    </ul>
+                                            
+                                            {{-- BARRA DE STATUS INSTANTÂNEO (UX KEY FEATURE) --}}
+                                            <div class="flex flex-wrap gap-2 mt-2">
+                                                <template x-for="(qtd, status) in item.statusBreakdown" :key="status">
+                                                    <span x-show="qtd > 0" 
+                                                          class="text-[10px] px-2 py-0.5 rounded uppercase font-black tracking-wide border flex items-center gap-1.5"
+                                                          :class="{
+                                                              'bg-[#efa324]/10 text-[#efa324] border-[#efa324]/20': status === 'pendente',
+                                                              'bg-[#bf7854]/10 text-[#bf7854] border-[#bf7854]/20 animate-pulse': status === 'preparo',
+                                                              'bg-[#7ed957]/10 text-[#7ed957] border-[#7ed957]/20': status === 'pronto'
+                                                          }">
+                                                        {{-- Bolinha de status --}}
+                                                        <span class="w-1.5 h-1.5 rounded-full" 
+                                                              :class="{
+                                                                'bg-[#efa324]': status === 'pendente',
+                                                                'bg-[#bf7854]': status === 'preparo',
+                                                                'bg-[#7ed957]': status === 'pronto'
+                                                              }"></span>
+                                                        <span x-text="qtd + ' ' + formatStatus(status)"></span>
+                                                    </span>
+                                                </template>
+                                            </div>
+
+                                            {{-- Tags de Observação --}}
+                                            <div class="flex flex-wrap gap-2 mt-2" x-show="item.observacoesUnicas.size > 0">
+                                                <template x-for="obs in Array.from(item.observacoesUnicas)">
+                                                    <span class="text-[9px] text-gray-400 italic flex items-center gap-1">
+                                                        <span>📝</span> <span x-text="obs"></span>
+                                                    </span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-col items-end pl-2">
+                                        <span class="font-mono font-bold text-gray-400 text-lg whitespace-nowrap" x-text="'€ ' + (item.preco * item.quantidade).toFixed(2)"></span>
+                                        <span class="text-[9px] text-gray-600 uppercase font-bold tracking-wide mt-1" x-text="'€ ' + Number(item.preco).toFixed(2) + ' un'"></span>
+                                    </div>
                                 </div>
-                            </template>
-                        </div>
+                            </div>
+                        </template>
                     </div>
                 </template>
             </div>
@@ -191,7 +193,7 @@
             {{-- Footer Detalhes --}}
             <div class="p-4 bg-[#202025] border-t border-gray-800 shrink-0 space-y-3">
                 <div class="flex justify-between items-end">
-                    <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Total da Mesa</span>
+                    <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Total Geral</span>
                     <span class="text-4xl font-black text-[#7ed957] kds-font-mono tracking-tighter" x-text="'€ ' + (mesaSelecionada?.total || 0).toFixed(2)"></span>
                 </div>
                 
@@ -201,7 +203,7 @@
                         <span>Add Produto</span>
                     </button>
                     
-                    <button @click="imprimirConta()" class="col-span-3 h-14 bg-[#2a2a30] border border-gray-700 text-white rounded-xl font-bold uppercase text-xs hover:bg-gray-700 flex items-center justify-center gap-2">
+                    <button @click="imprimirContaConsolidada()" class="col-span-3 h-14 bg-[#2a2a30] border border-gray-700 text-white rounded-xl font-bold uppercase text-xs hover:bg-gray-700 flex items-center justify-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
                         <span>Imprimir</span>
                     </button>
@@ -215,55 +217,48 @@
         </div>
     </div>
 
-    {{-- SUB-MODAL 1: EDIÇÃO DE QUANTIDADE (DARK) --}}
+    {{-- SUB-MODAL 1: EDIÇÃO DE LOTE --}}
     <div x-show="editandoItem" 
          class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" 
          x-transition.opacity 
          @click.self.stop="editandoItem = null" 
          style="display: none;">
         
-        <div class="bg-[#18181b] w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-fade-in-up border border-gray-800"
-             @click.stop>
-            
+        <div class="bg-[#18181b] w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-fade-in-up border border-gray-800" @click.stop>
             <div class="p-6 text-center">
-                <h3 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-1">Gerenciar Item</h3>
-                <h2 class="text-2xl font-black text-white leading-tight mb-6" x-text="editandoItem?.nome_produto"></h2>
+                <h3 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Gerenciar Item</h3>
+                <h2 class="text-2xl font-black text-white leading-tight mb-2" x-text="editandoItem?.nome_produto"></h2>
+                <p class="text-xs text-gray-400 mb-6">Esta ação afeta o último pedido deste item.</p>
                 
                 <div class="flex items-center justify-center gap-6 mb-8">
-                    <button @click="mudarQtd(-1)" class="w-16 h-16 rounded-2xl bg-[#2a2a30] text-white text-3xl font-black hover:bg-red-500/20 active:scale-95 transition-all">-</button>
+                    <button @click="removerUmItemDoLote()" class="w-16 h-16 rounded-2xl bg-[#2a2a30] text-white text-3xl font-black hover:bg-red-500/20 active:scale-95 transition-all">-</button>
                     <div class="text-center">
                         <span class="block text-5xl font-black font-mono tracking-tighter text-[#7ed957]" x-text="editandoItem?.quantidade"></span>
-                        <span class="text-[10px] font-bold text-gray-500 uppercase">QTD ATUAL</span>
+                        <span class="text-[10px] font-bold text-gray-500 uppercase">TOTAL</span>
                     </div>
-                    <button @click="mudarQtd(1)" class="w-16 h-16 rounded-2xl bg-[#7ed957] text-black text-3xl font-black hover:bg-[#6ec24a] active:scale-95 transition-all">+</button>
+                    <button @click="adicionarMaisUmNoLote()" class="w-16 h-16 rounded-2xl bg-[#7ed957] text-black text-3xl font-black hover:bg-[#6ec24a] active:scale-95 transition-all">+</button>
                 </div>
 
                 <div class="space-y-3">
-                    <button @click="salvarQtd()" class="w-full h-14 bg-blue-600 text-white font-black rounded-xl uppercase tracking-widest shadow-lg shadow-blue-500/30 active:scale-[0.98]">
-                        Confirmar Alteração
+                    <button @click="removerTodosDoLote()" class="w-full py-4 text-red-500 bg-red-500/10 border border-red-500/20 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-red-500/20 transition-colors">
+                        Excluir Todos (<span x-text="editandoItem?.quantidade"></span>)
                     </button>
-                    <button @click="removerTotalmente()" class="w-full py-3 text-red-500 text-xs font-bold uppercase tracking-widest hover:bg-red-500/10 rounded-xl transition-colors">
-                        Remover Item da Mesa
+                    <button @click="editandoItem = null" class="w-full py-3 text-gray-400 text-xs font-bold uppercase hover:text-white">
+                        Fechar
                     </button>
                 </div>
-            </div>
-            
-            <div class="bg-[#202025] p-3 text-center border-t border-gray-800 cursor-pointer hover:bg-[#2a2a30]" @click="editandoItem = null">
-                <span class="text-xs font-bold text-gray-400">CANCELAR</span>
             </div>
         </div>
     </div>
 
-    {{-- SUB-MODAL 2: ADICIONAR NOVO PRODUTO (DARK) --}}
+    {{-- SUB-MODAL 2: ADICIONAR NOVO PRODUTO --}}
     <div x-show="adicionandoItem" 
          class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" 
          x-transition.opacity 
          @click.self.stop="fecharAdicionarItem()" 
          style="display: none;">
         
-        <div class="bg-[#18181b] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-fade-in-up flex flex-col max-h-[80vh] border border-gray-800"
-             @click.stop>
-            
+        <div class="bg-[#18181b] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-fade-in-up flex flex-col max-h-[80vh] border border-gray-800" @click.stop>
             <div class="p-6 border-b border-gray-800">
                 <h2 class="text-xl font-black text-white mb-4">Adicionar à Mesa <span x-text="mesaSelecionada?.numero"></span></h2>
                 <input type="text" x-model="searchProduto" placeholder="Buscar produto..." 
@@ -281,21 +276,18 @@
                     </div>
                 </template>
             </div>
-            
             <button @click="fecharAdicionarItem()" class="p-4 bg-[#18181b] border-t border-gray-800 font-bold text-gray-500 uppercase text-xs hover:text-white">Fechar</button>
         </div>
     </div>
 
-    {{-- SUB-MODAL 3: CONFIRMAR PAGAMENTO (DARK) --}}
+    {{-- SUB-MODAL 3: CONFIRMAR PAGAMENTO --}}
     <div x-show="confirmandoFecho" 
          class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" 
          x-transition.opacity 
          @click.self.stop="confirmandoFecho = false" 
          style="display: none;">
         
-        <div class="bg-[#18181b] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-fade-in-up border border-[#7ed957]/30"
-             @click.stop>
-            
+        <div class="bg-[#18181b] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-fade-in-up border border-[#7ed957]/30" @click.stop>
             <div class="p-8 text-center">
                 <div class="w-20 h-20 bg-[#7ed957]/10 text-[#7ed957] rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm border border-[#7ed957]/20">
                     <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -327,15 +319,63 @@
             clock: '',
             online: false,
             ready: false,
-            // totalMesas removido (agora é dinâmico)
 
             async init() {
-                // Removida inicialização estática. Agora busca do servidor.
                 setInterval(() => { this.clock = new Date().toLocaleTimeString('pt-PT', {hour: '2-digit', minute:'2-digit'}); }, 1000);
                 await this.waitForAxios();
                 this.setupSocket();
-                this.fetchDados(); // Inicia a busca real
+                this.fetchDados();
                 this.carregarProdutos();
+            },
+
+            // --- COMPUTED: ITENS CONSOLIDADOS COM BREAKDOWN DE STATUS ---
+            get itensConsolidados() {
+                if (!this.mesaSelecionada || !this.mesaSelecionada.pedidos) return [];
+
+                let mapa = {};
+                
+                this.mesaSelecionada.pedidos.forEach(pedido => {
+                    pedido.itens.forEach(item => {
+                        let chave = item.nome_produto + '_' + item.preco;
+                        
+                        if (!mapa[chave]) {
+                            mapa[chave] = {
+                                chaveUnica: chave,
+                                nome_produto: item.nome_produto,
+                                preco: parseFloat(item.preco),
+                                quantidade: 0,
+                                observacoesUnicas: new Set(),
+                                ids_reais: [],
+                                produto_id_real: null,
+                                // Novo: Contador de status
+                                statusBreakdown: { pendente: 0, preparo: 0, pronto: 0 } 
+                            };
+                        }
+
+                        mapa[chave].quantidade += item.quantidade;
+                        mapa[chave].ids_reais.push(item.id);
+                        
+                        // Somar status (Assumindo que o item herda status do pedido)
+                        // AVISO: Se o backend já manda o item.status, melhor. Se não, usamos pedido.status.
+                        // No modelo atual, parece que o status é do PEDIDO.
+                        let statusAtual = pedido.status || 'pendente';
+                        if(mapa[chave].statusBreakdown[statusAtual] !== undefined) {
+                            mapa[chave].statusBreakdown[statusAtual] += item.quantidade;
+                        }
+
+                        let obsLimpa = item.observacao;
+                        if (obsLimpa && !obsLimpa.includes('Acrescentar +')) {
+                            mapa[chave].observacoesUnicas.add(obsLimpa);
+                        }
+                    });
+                });
+
+                return Object.values(mapa).sort((a,b) => a.nome_produto.localeCompare(b.nome_produto));
+            },
+
+            formatStatus(status) {
+                const map = { 'pendente': 'Pendente', 'preparo': 'Preparo', 'pronto': 'Pronto' };
+                return map[status] || status;
             },
 
             async carregarProdutos() {
@@ -345,44 +385,48 @@
                 } catch(e) { console.error("Erro prod", e); }
             },
 
-            abrirEdicaoItem(item) { this.editandoItem = { ...item }; },
-            abrirAdicionarItem() { this.searchProduto = ''; this.adicionandoItem = true; },
-            fecharAdicionarItem() { this.adicionandoItem = false; },
-
-            mudarQtd(delta) {
-                if (this.editandoItem) {
-                    this.editandoItem.quantidade += delta;
-                    if (this.editandoItem.quantidade < 0) this.editandoItem.quantidade = 0;
-                }
+            abrirEdicaoLote(itemConsolidado) {
+                const prodOriginal = this.listaProdutos.find(p => p.nome === itemConsolidado.nome_produto);
+                this.editandoItem = {
+                    ...itemConsolidado,
+                    produto_id_real: prodOriginal ? prodOriginal.id : null
+                };
             },
 
-            async salvarQtd() {
-                if (!this.editandoItem) return;
-                if (this.editandoItem.quantidade === 0) {
-                    this.removerTotalmente();
-                    return;
-                }
+            async adicionarMaisUmNoLote() {
+                if (!this.editandoItem || !this.editandoItem.produto_id_real) { alert("Produto não identificado."); return; }
                 try {
-                    await window.axios.post(`/api/gerente/atualizar-qtd-item/${this.editandoItem.id}`, { quantidade: this.editandoItem.quantidade });
-                    this.editandoItem = null; 
-                    this.fetchDados(); 
-                } catch(e) { alert("Erro ao atualizar."); }
+                    await window.axios.post('/api/gerente/adicionar-item-mesa', { mesa: this.mesaSelecionada.numero, produto_id: this.editandoItem.produto_id_real });
+                    this.editandoItem.quantidade++;
+                    this.fetchDados();
+                } catch(e) { alert("Erro ao adicionar."); }
             },
 
-            async removerTotalmente() {
+            async removerUmItemDoLote() {
+                if (!this.editandoItem || this.editandoItem.ids_reais.length === 0) return;
+                const idParaRemover = this.editandoItem.ids_reais[this.editandoItem.ids_reais.length - 1];
                 try {
-                    await window.axios.delete(`/api/gerente/remover-item/${this.editandoItem.id}`);
-                    this.editandoItem = null; 
+                    await window.axios.delete(`/api/gerente/remover-item/${idParaRemover}`);
+                    this.editandoItem.quantidade--;
+                    this.editandoItem.ids_reais.pop();
+                    if (this.editandoItem.quantidade <= 0) this.editandoItem = null;
                     this.fetchDados();
                 } catch(e) { alert("Erro ao remover."); }
             },
 
-            async removerItem(id) {
+            async removerTodosDoLote() {
+                if (!this.editandoItem) return;
+                if (!confirm(`Remover todos?`)) return;
                 try {
-                    await window.axios.delete(`/api/gerente/remover-item/${id}`);
+                    const promises = this.editandoItem.ids_reais.map(id => window.axios.delete(`/api/gerente/remover-item/${id}`));
+                    await Promise.all(promises);
+                    this.editandoItem = null;
                     this.fetchDados();
-                } catch(e) { alert('Erro ao remover.'); }
+                } catch(e) { alert("Erro ao remover lote."); }
             },
+
+            abrirAdicionarItem() { this.searchProduto = ''; this.adicionandoItem = true; },
+            fecharAdicionarItem() { this.adicionandoItem = false; },
 
             async adicionarProdutoNaMesa(produto) {
                 try {
@@ -395,53 +439,49 @@
                 } catch(e) { alert("Erro ao adicionar item."); }
             },
 
-            // --- LÓGICA PRINCIPAL DE SINCRONIZAÇÃO DINÂMICA ---
             async fetchDados() {
                 if (typeof window.axios === 'undefined') return; 
                 try {
-                    // 1. Busca a estrutura real das mesas cadastradas no Filament
                     const resConfig = await window.axios.get('/api/mesas-configuradas');
                     const mesasDb = resConfig.data;
-
-                    // 2. Busca o estado atual (pedidos, totais)
                     const resStatus = await window.axios.get('/api/gerente/resumo-mesas');
                     const dadosBackend = resStatus.data;
                     
-                    // 3. Mescla as informações
                     this.mesas = mesasDb.map(mesaConfig => {
-                        // Encontra se tem pedidos para esta mesa (compara ID/Número)
                         const dadosMesa = dadosBackend.find(d => d.mesa == mesaConfig.numero);
-                        
                         return {
                             numero: mesaConfig.numero,
-                            label: mesaConfig.label,          // Ex: "VIP", "Varanda"
-                            capacidade: mesaConfig.capacidade, // Ex: 4 Lugares
-                            // Se tiver dados ativos usa, senão zera
+                            label: mesaConfig.label,
+                            capacidade: mesaConfig.capacidade,
                             pedidos: dadosMesa ? dadosMesa.pedidos : [],
                             total: dadosMesa ? parseFloat(dadosMesa.total) : 0
                         };
                     });
 
-                    // 4. Se houver mesa selecionada (modal aberto), atualiza ela também
                     if (this.mesaSelecionada) {
                         const atualizada = this.mesas.find(m => m.numero === this.mesaSelecionada.numero);
                         if (atualizada) {
                             this.mesaSelecionada = atualizada;
+                            if (this.editandoItem) {
+                                const novoConsolidado = this.itensConsolidados.find(i => i.chaveUnica === this.editandoItem.chaveUnica);
+                                if (novoConsolidado) {
+                                    novoConsolidado.produto_id_real = this.editandoItem.produto_id_real;
+                                    this.editandoItem = novoConsolidado;
+                                } else {
+                                    this.editandoItem = null;
+                                }
+                            }
                         } else {
-                            // Mesa foi excluída do sistema enquanto via
                             this.mesaSelecionada = null; 
                         }
                     }
                 } catch (e) { console.error("Erro sync:", e); }
             },
 
-            // --- Classes visuais baseadas no estado ---
             getMesaClasses(mesa) {
                 if (mesa.pedidos.length > 0) {
-                    // Ocupada: Borda Terracota + Sombra + Cursor de Click
                     return 'border-[#bf7854] shadow-[0_0_15px_rgba(191,120,84,0.15)] cursor-pointer active:scale-[0.97] z-10';
                 } else {
-                    // Livre: Borda cinza discreta + Sem cursor de click (Gerente só vê detalhe de mesa ocupada, ou você pode liberar click aqui se quiser)
                     return 'border-gray-800 text-gray-600 cursor-default hover:border-gray-700';
                 }
             },
@@ -482,26 +522,51 @@
                 } catch(e) { alert('Erro ao fechar.'); this.confirmandoFecho = false; }
             },
             
-            imprimirConta() {
+            abrirMesa(mesa) { 
+                if (mesa.pedidos.length > 0) this.mesaSelecionada = mesa; 
+            },
+
+            imprimirContaConsolidada() {
                 if(!this.mesaSelecionada) return;
                 const m = this.mesaSelecionada;
+                const itens = this.itensConsolidados; 
+                
                 const w = window.open('', '', 'width=350,height=600');
                 w.document.write(`
-                    <style>body{font-family:monospace;padding:20px} .r{display:flex;justify-content:space-between} h2{margin:0}</style>
-                    <h2 style="text-align:center">MESA ${m.numero}</h2><hr>
-                    ${m.pedidos.map(p => p.itens.map(i => `<div class="r"><span>${i.quantidade}x ${i.nome_produto}</span><span>${(i.preco*i.quantidade).toFixed(2)}</span></div>`).join('')).join('')}
-                    <hr><div class="r" style="font-weight:bold;font-size:1.2em"><span>TOTAL</span><span>€ ${m.total.toFixed(2)}</span></div>
+                    <html>
+                    <head>
+                        <title>MESA ${m.numero}</title>
+                        <style>
+                            body { font-family: 'Courier New', monospace; padding: 20px; font-size: 12px; }
+                            .header { text-align: center; margin-bottom: 20px; }
+                            .row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+                            .total { font-weight: bold; font-size: 1.4em; border-top: 1px dashed #000; margin-top: 10px; padding-top: 10px; }
+                            .qty { font-weight: bold; margin-right: 5px; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <h2>JUNIOR BAR</h2>
+                            <h3>MESA ${m.numero}</h3>
+                            <p>${new Date().toLocaleString('pt-PT')}</p>
+                        </div>
+                        <hr style="border-top: 1px dashed #000;">
+                        ${itens.map(i => `
+                            <div class="row">
+                                <span><span class="qty">${i.quantidade}x</span> ${i.nome_produto}</span>
+                                <span>${(i.preco * i.quantidade).toFixed(2)}</span>
+                            </div>
+                        `).join('')}
+                        <div class="row total">
+                            <span>TOTAL</span>
+                            <span>€ ${m.total.toFixed(2)}</span>
+                        </div>
+                        <br><div style="text-align:center;">Obrigado!</div>
+                    </body>
+                    </html>
                 `);
                 w.document.close();
                 setTimeout(() => { w.print(); w.close(); }, 500);
-            },
-            
-            formatTime(dateStr) { return new Date(dateStr).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); },
-            
-            // Lógica: Só abre mesa se tiver pedidos (Gerente vê detalhes). 
-            // Se quiser permitir abrir mesa vazia para lançar pedido direto, remova o if.
-            abrirMesa(mesa) { 
-                if (mesa.pedidos.length > 0) this.mesaSelecionada = mesa; 
             }
         }
     }

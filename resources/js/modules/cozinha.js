@@ -290,6 +290,6 @@ export default function kdsSystem() {
                 if (itensDaEstacao.length === 0) return null;
                 return { ...p, itens: itensDaEstacao };
             }).filter(p => p !== null);
-        }
+        },
     }
 }
