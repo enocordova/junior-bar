@@ -9,3 +9,7 @@ Route::get('/garcom', function () {
 Route::get('/cozinha', function () {
     return view('cozinha');
 });
+
+Route::get('/gerente', function () {
+    return view('gerente');
+});

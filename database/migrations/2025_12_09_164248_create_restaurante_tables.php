@@ -4,7 +4,6 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-// Note que aqui não tem "class NomeDaClasse", é apenas "return new class"
 return new class extends Migration
 {
     public function up()
@@ -24,6 +23,9 @@ return new class extends Migration
             $table->string('nome_produto');
             $table->integer('quantidade');
             $table->string('observacao')->nullable();
+            $table->decimal('preco', 10, 2); 
+            $table->string('categoria');
+            
             $table->timestamps();
         });
     }

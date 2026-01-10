@@ -4,23 +4,34 @@
 :root {
     /* --- Tipografia --- */
     --font-ui: 'Inter', system-ui, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace; /* Essencial para Timers e Qtd */
+    --font-mono: 'JetBrains Mono', monospace;
 
-    /* --- Paleta KDS (Alto Contraste) --- */
-    --kds-bg: #09090b;       /* Quase preto absoluto */
-    --kds-card: #18181b;     /* Cinza muito escuro */
-    --kds-border: #27272a;   
-    
-    /* --- Cores Semânticas de Status --- */
-    --status-new-bg: #27272a;
-    --status-new-border: #71717a;
-    
-    --status-cooking-bg: #172554; /* Azul Profundo */
-    --status-cooking-border: #3b82f6;
-    
-    --status-late-bg: #450a0a;    /* Vermelho Profundo (Para atrasos) */
-    --status-late-border: #ef4444;
+    /* --- Cores Identidade Junior Bar --- */
+    --jr-green: #7ed957;
+    --jr-brown: #bf7854;
+    --jr-orange: #efa324;
+    --jr-gray: #4d4a52;
 
+    /* --- Backgrounds --- */
+    --kds-bg: #0c0c0e;       /* Fundo da tela */
+    --kds-card: #18181b;     /* Fundo dos cartões */
+    --kds-border: var(--jr-gray); 
+    
+    /* --- Status Semânticos (Junior Bar Style) --- */
+    
+    /* 1. Pedido Novo (Pendente) */
+    --status-new-bg: #1a2e1a; 
+    --status-new-border: var(--jr-green);
+    
+    /* 2. Em Preparo */
+    --status-cooking-bg: #2d1b14; 
+    --status-cooking-border: var(--jr-brown);
+    
+    /* 3. Alertas e Reforços */
+    --status-late-bg: #2e1d0a;    
+    --status-late-border: var(--jr-orange);
+
+    /* --- Texto --- */
     --text-primary: #f4f4f5;
     --text-secondary: #a1a1aa;
 }

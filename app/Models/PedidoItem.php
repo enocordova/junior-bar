@@ -8,6 +8,26 @@ use Illuminate\Database\Eloquent\Model;
 class PedidoItem extends Model
 {
     use HasFactory;
+
     protected $table = 'pedido_items';
-    protected $fillable = ['pedido_id', 'nome_produto', 'quantidade', 'observacao'];
+    
+    // Campos que podem ser preenchidos
+    protected $fillable = [
+        'pedido_id', 
+        'nome_produto', 
+        'quantidade', 
+        'observacao',
+        'preco',
+        'categoria'
+    ];
+
+    protected $casts = [
+        'preco' => 'float',
+        'quantidade' => 'integer'
+    ];
+
+    public function pedido()
+    {
+        return $this->belongsTo(Pedido::class);
+    }
 }

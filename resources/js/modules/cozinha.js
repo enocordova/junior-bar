@@ -1,267 +1,295 @@
+/* resources/js/modules/cozinha.js */
 import { io } from "socket.io-client";
+import axios from 'axios';
 
-class KDSManager {
-    constructor() {
-        // 1. CONFIGURAÇÃO DINÂMICA
-        // Pega o IP definido no layout (kds.blade.php) ou usa fallback se falhar
-        const SOCKET_URL = window.AppConfig?.socketUrl || "http://localhost:3000";
-
-        // 2. INICIALIZAÇÃO DO SOCKET
-        this.socket = io(SOCKET_URL, {
-            reconnection: true,
-            reconnectionAttempts: 10,
-            transports: ['websocket'] // Força websocket para menor latência
-        });
+export default function kdsSystem() {
+    return {
+        // --- ESTADO (State) ---
+        pedidos: [],
+        online: false,
+        socket: null,
+        clock: '--:--',
+        now: Date.now(), // Usado para reatividade dos timers
+        filtro: 'todos',
         
-        // 3. CACHE DE ELEMENTOS DOM
-        this.grid = document.getElementById('kds-grid');
-        this.template = document.getElementById('ticket-template');
-        this.connectionInd = document.getElementById('connection-indicator');
+        // --- RECALL (Soft Delete / Desfazer) ---
+        pedidosFinalizando: [], // IDs visualmente escondidos enquanto o timer corre
+        undoData: null,         // Dados do pedido na barra de desfazer {id, mesa}
+        undoTimer: null,        // Referência do setTimeout
         
-        // 4. ESTADO LOCAL (Map de Pedidos)
-        // Usamos um Map para rastrear os pedidos em memória e evitar ler o DOM repetidamente
-        this.orders = new Map();
-        
-        this.init();
-    }
+        // --- AUDIO & ALERTAS (ORDER BUMP) ---
+        audioAlert: null,
+        pedidosAlterados: [],   // IDs que devem piscar (Alerta Visual de alteração)
 
-    init() {
-        this.setupSocket();
-        this.startGlobalClock();
-        this.fetchActiveOrders();
-    }
+        // --- INICIALIZAÇÃO ---
+        init() {
+            this.setupAudio();
+            this.setupSocket();
+            this.startClock();
+            this.fetchActiveOrders();
+        },
 
-    setupSocket() {
-        this.socket.on('connect', () => this.setOnline(true));
-        this.socket.on('disconnect', () => this.setOnline(false));
-        
-        // Eventos de Negócio
-        this.socket.on('cozinha_novo_pedido', (pedido) => this.addOrUpdateTicket(pedido, true));
-        this.socket.on('cozinha_atualizar_status', (dados) => this.updateTicketStatus(dados));
-        this.socket.on('pedido_pronto', (dados) => this.removeTicket(dados.id || dados.id_pedido));
-    }
+        setupAudio() {
+            // Cria o objeto de áudio apenas uma vez
+            this.audioAlert = new Audio('/sounds/ding.mp3'); 
+            this.audioAlert.volume = 1.0; 
+        },
 
-    setOnline(isOnline) {
-        if (isOnline) {
-            this.connectionInd.textContent = "ONLINE";
-            this.connectionInd.className = "px-3 py-1 rounded bg-green-500/10 text-green-500 text-xs font-bold border border-green-500/20";
-        } else {
-            this.connectionInd.textContent = "OFFLINE";
-            this.connectionInd.className = "px-3 py-1 rounded bg-red-500/10 text-red-500 text-xs font-bold border border-red-500/20";
-        }
-    }
+        // --- 1. CONFIGURAÇÃO DO SOCKET ---
+        setupSocket() {
+            const SOCKET_URL = window.AppConfig?.socketUrl || "http://localhost:3000";
 
-    async fetchActiveOrders() {
-        try {
-            const res = await fetch('/api/pedidos-ativos');
-            const data = await res.json();
-            this.grid.innerHTML = ''; // Limpa grid (safe reload)
-            this.orders.clear();
-            data.forEach(p => this.addOrUpdateTicket(p));
-        } catch (e) {
-            console.error("Erro ao buscar pedidos:", e);
-        }
-    }
-
-    addOrUpdateTicket(pedido, isNew = false) {
-        // Normaliza ID
-        const id = pedido.id || pedido.id_pedido;
-        
-        if (this.orders.has(id)) return; // Já existe
-
-        const clone = this.template.content.cloneNode(true);
-        const cardContainer = clone.querySelector('.ticket-card');
-        cardContainer.id = `ticket-${id}`;
-        
-        // Popula Dados Básicos
-        clone.querySelector('.mesa-num').textContent = pedido.mesa;
-        clone.querySelector('.ticket-id').textContent = `#${id}`;
-        
-        // Renderiza Itens com foco em legibilidade
-        const list = clone.querySelector('.item-list');
-        pedido.itens.forEach(item => {
-            const li = document.createElement('li');
-            li.className = "flex justify-between items-start border-b border-gray-800 pb-2 last:border-0";
-            
-            // Lógica para Observações (Destaque amarelo)
-            const obsHtml = item.observacao 
-                ? `<div class="text-yellow-500 text-xs italic mt-0.5 font-bold">⚠️ ${item.observacao}</div>` 
-                : '';
-
-            li.innerHTML = `
-                <div class="flex-1 pr-2">
-                    <span class="text-lg font-semibold text-gray-100 leading-tight block">${item.nome_produto || item.nome}</span>
-                    ${obsHtml}
-                </div>
-                <span class="bg-gray-800 text-white font-mono text-xl px-3 py-1 rounded font-bold">
-                    ${item.quantidade || item.qtd}
-                </span>
-            `;
-            list.appendChild(li);
-        });
-
-        this.grid.appendChild(clone);
-        
-        // Salva referencia e inicia timer individual
-        const ticketElement = document.getElementById(`ticket-${id}`);
-        
-        this.orders.set(id, {
-            element: ticketElement,
-            startTime: new Date(pedido.created_at || new Date()).getTime(),
-            status: pedido.status
-        });
-
-        this.applyStatusVisuals(id, pedido.status, pedido.mesa);
-
-        if (isNew) {
-            // Toca som (opcional) e flash visual
-            ticketElement.classList.add('ring-2', 'ring-yellow-400');
-            setTimeout(() => ticketElement.classList.remove('ring-2', 'ring-yellow-400'), 2000);
-        }
-    }
-
-    updateTicketStatus(dados) {
-        const id = dados.id;
-        if (!this.orders.has(id)) return;
-
-        const order = this.orders.get(id);
-        order.status = dados.status;
-        this.applyStatusVisuals(id, dados.status, dados.mesa);
-    }
-
-    applyStatusVisuals(id, status, mesa) {
-        const order = this.orders.get(id);
-        const el = order.element;
-        const btn = el.querySelector('.action-btn');
-        const badge = el.querySelector('.status-badge');
-
-        // Reset classes
-        el.style.borderColor = '';
-        btn.onclick = null;
-
-        if (status === 'pendente') {
-            el.style.borderColor = 'var(--status-new-border)';
-            badge.textContent = "AGUARDANDO";
-            badge.className = "status-badge text-[10px] uppercase font-bold tracking-wider mt-1 text-gray-400";
-            
-            btn.textContent = "INICIAR PREPARO";
-            btn.className = "action-btn w-full py-4 bg-gray-700 hover:bg-gray-600 text-white font-bold transition-colors";
-            btn.onclick = () => this.changeStatus(id, 'preparo', mesa);
-        } 
-        else if (status === 'preparo') {
-            el.style.borderColor = 'var(--status-cooking-border)';
-            badge.textContent = "EM PREPARO >>";
-            badge.className = "status-badge text-[10px] uppercase font-bold tracking-wider mt-1 text-blue-400 animate-pulse";
-            
-            btn.textContent = "✔ FINALIZAR";
-            btn.className = "action-btn w-full py-4 bg-green-600 hover:bg-green-500 text-white font-bold shadow-lg transition-colors";
-            btn.onclick = () => this.changeStatus(id, 'pronto', mesa);
-        }
-    }
-
-    async changeStatus(id, newStatus, mesa) {
-        // Optimistic UI Update (Atualiza visualmente antes da API responder)
-        this.updateTicketStatus({ id, status: newStatus, mesa });
-
-        try {
-            await fetch(`/api/atualizar-status/${id}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify({ status: newStatus })
-            });
-            
-            this.socket.emit('atualizar_status_pedido', { id, status: newStatus, mesa });
-        } catch (e) {
-            console.error("Falha ao atualizar status", e);
-            alert("Erro de conexão. Tente novamente.");
-            // Revert UI if needed (not implemented for simplicity)
-        }
-    }
-
-    removeTicket(id) {
-        if (!this.orders.has(id)) return;
-        
-        const el = this.orders.get(id).element;
-        el.style.transform = 'scale(0.9) translateY(20px)';
-        el.style.opacity = '0';
-        
-        setTimeout(() => {
-            el.remove();
-            this.orders.delete(id);
-        }, 300);
-    }
-
-    startGlobalClock() {
-        // Atualiza o relógio do topo apenas uma vez por minuto (menos processamento)
-        setInterval(() => {
-            const now = new Date();
-            document.getElementById('clock').textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        }, 1000);
-
-        // Loop otimizado para os Tickets (requestAnimationFrame é mais suave que setInterval)
-        const updateTimers = () => {
-            const now = Date.now(); // Timestamp atual em ms
-
-            this.orders.forEach((data, id) => {
-                // data.startTime agora deve vir do backend como Timestamp (inteiro)
-                const diffMs = now - data.startTime; 
-                const totalSeconds = Math.floor(diffMs / 1000);
-
-                // Proteção contra tempos negativos (relógios dessincronizados)
-                if (totalSeconds < 0) return;
-
-                const timerEl = data.element.querySelector('.timer');
-                
-                // Lógica de Formatação Inteligente
-                let timeString;
-                const hours = Math.floor(totalSeconds / 3600);
-                const mins = Math.floor((totalSeconds % 3600) / 60);
-                const secs = totalSeconds % 60;
-
-                if (hours > 0) {
-                    // Formato HH:MM se passar de 1 hora (ex: 01:15)
-                    timeString = `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}h`;
-                } else {
-                    // Formato MM:SS padrão (ex: 45:30)
-                    timeString = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-                }
-
-                // Atualiza o DOM apenas se o texto mudou (Performance)
-                if (timerEl.textContent !== timeString) {
-                    timerEl.textContent = timeString;
-                }
-
-                // Gestão de Cores por Níveis de Atraso (SLA)
-                // Nível 1: Atenção (> 10 min) - Amarelo
-                // Nível 2: Crítico (> 20 min) - Vermelho Sólido
-                // Nível 3: Caos (> 30 min) - Vermelho Pulsante (Sem mexer na opacidade do texto)
-                
-                timerEl.className = "timer text-xl font-bold kds-font-mono transition-colors duration-300"; // Reset base
-
-                if (totalSeconds > 1800) { // > 30 min
-                    timerEl.classList.add('text-red-500', 'animate-pulse-color'); // Nova animação customizada
-                    data.element.style.borderColor = 'var(--status-late-border)';
-                } else if (totalSeconds > 1200) { // > 20 min
-                    timerEl.classList.add('text-red-500');
-                    data.element.style.borderColor = 'var(--status-late-border)';
-                } else if (totalSeconds > 600) { // > 10 min
-                    timerEl.classList.add('text-yellow-400');
-                } else {
-                    timerEl.classList.add('text-gray-300');
-                }
+            this.socket = io(SOCKET_URL, {
+                reconnection: true,
+                reconnectionAttempts: 10,
+                transports: ['websocket']
             });
 
-            requestAnimationFrame(updateTimers); // Loop sincronizado com o refresh rate do monitor (60fps)
-        };
+            this.socket.on('connect', () => this.online = true);
+            this.socket.on('disconnect', () => this.online = false);
 
-        requestAnimationFrame(updateTimers);
+            // [EVENTO CRÍTICO] Recebe novos pedidos ou ATUALIZAÇÕES completas
+            this.socket.on('cozinha_novo_pedido', (pedido) => {
+                this.addOrUpdateLocal(pedido);
+            });
+
+            // Atualização de status simples
+            this.socket.on('cozinha_atualizar_status', (dados) => {
+                if (this.undoData && this.undoData.id == dados.id) return;
+
+                const index = this.pedidos.findIndex(p => p.id == dados.id);
+                if (index !== -1) {
+                    this.pedidos[index].status = dados.status;
+                    // Se foi marcado como pronto remotamente, remove da tela
+                    if (dados.status === 'pronto' || dados.status === 'cancelado') {
+                        this.pedidos.splice(index, 1);
+                    }
+                }
+            });
+            
+            // Evento de limpeza/remoção
+            this.socket.on('pedido_pronto', (dados) => {
+                 this.pedidos = this.pedidos.filter(p => p.id != (dados.id || dados.id_pedido));
+            });
+        },
+
+        // --- 2. GERENCIAMENTO DE DADOS ---
+        async fetchActiveOrders() {
+            try {
+                const res = await axios.get('/api/pedidos-ativos');
+                this.pedidos = res.data.filter(p => !this.pedidosFinalizando.includes(p.id));
+            } catch (e) {
+                console.error("Erro ao buscar pedidos:", e);
+            }
+        },
+
+        // [CORE] Lógica Central de Entrada de Dados
+        addOrUpdateLocal(pedido) {
+            // [SEGURANÇA FRONTEND] 
+            // Se o backend enviar um pedido 'pronto' ou 'cancelado' por engano (ex: edição financeira),
+            // nós rejeitamos e removemos da tela se ele existir. Isso evita "Zumbis".
+            if (pedido.status !== 'pendente' && pedido.status !== 'preparo') {
+                const existingIndex = this.pedidos.findIndex(p => p.id === pedido.id);
+                if (existingIndex !== -1) {
+                    this.pedidos.splice(existingIndex, 1);
+                }
+                return; 
+            }
+
+            const index = this.pedidos.findIndex(p => p.id === pedido.id);
+            
+            if (index !== -1) {
+                // CASO 1: ATUALIZAÇÃO (O pedido já existe na tela)
+                this.pedidos[index] = pedido; 
+                
+                // Só pisca a tela se for um UPDATE real (ignora create tardio)
+                if (pedido.event_type === 'update') {
+                    this.triggerUpdateFlash(pedido.id);
+                }
+                
+                this.playNotification(); 
+            } else {
+                // CASO 2: NOVO PEDIDO
+                this.pedidos.push(pedido);
+                // Em criação, apenas toca o som, sem flash de alteração
+                this.playNotification();
+            }
+        },
+
+        // --- 3. ALERTA VISUAL (ORDER BUMP) ---
+        triggerUpdateFlash(id) {
+            if (!this.pedidosAlterados.includes(id)) {
+                this.pedidosAlterados.push(id);
+                
+                // Remove o destaque automaticamente após 15 segundos
+                setTimeout(() => {
+                    this.pedidosAlterados = this.pedidosAlterados.filter(pid => pid !== id);
+                }, 15000);
+            }
+        },
+
+        isUpdated(id) {
+            return this.pedidosAlterados.includes(id);
+        },
+
+        // --- 4. AÇÕES & FLUXO DE RECALL (UNDO) ---
+        
+        async avancarStatus(pedido) {
+            const novoStatus = pedido.status === 'pendente' ? 'preparo' : 'pronto';
+
+            if (novoStatus === 'pronto') {
+                this.iniciarFinalizacao(pedido);
+                return; 
+            }
+
+            const oldStatus = pedido.status;
+            pedido.status = novoStatus; 
+
+            try {
+                await axios.post(`/api/atualizar-status/${pedido.id}`, { status: novoStatus });
+                this.socket.emit('atualizar_status_pedido', { 
+                    id: pedido.id, 
+                    status: novoStatus, 
+                    mesa: pedido.mesa 
+                });
+            } catch (e) {
+                pedido.status = oldStatus;
+                alert("Erro de conexão!");
+            }
+        },
+
+        iniciarFinalizacao(pedido) {
+            if (this.undoData) this.confirmarFinalizacao(this.undoData.id);
+
+            this.pedidosFinalizando.push(pedido.id);
+            this.undoData = { id: pedido.id, mesa: pedido.mesa };
+
+            if (this.undoTimer) clearTimeout(this.undoTimer);
+            this.undoTimer = setTimeout(() => {
+                this.confirmarFinalizacao(pedido.id);
+            }, 3000); 
+        },
+
+        desfazerFinalizacao() {
+            if (!this.undoData) return;
+            const idParaRestaurar = this.undoData.id;
+            
+            clearTimeout(this.undoTimer);
+            
+            this.pedidosFinalizando = this.pedidosFinalizando.filter(id => id !== idParaRestaurar);
+            
+            this.undoData = null;
+            this.undoTimer = null;
+        },
+
+        async confirmarFinalizacao(id) {
+            if (this.undoData && this.undoData.id === id) {
+                this.undoData = null;
+                this.undoTimer = null;
+            }
+            try {
+                await axios.post(`/api/atualizar-status/${id}`, { status: 'pronto' });
+                
+                this.pedidos = this.pedidos.filter(p => p.id !== id);
+                this.pedidosFinalizando = this.pedidosFinalizando.filter(pid => pid !== id);
+                
+                this.socket.emit('atualizar_status_pedido', { id: id, status: 'pronto' });
+            } catch (e) {
+                this.pedidosFinalizando = this.pedidosFinalizando.filter(pid => pid !== id);
+                console.error("Erro ao finalizar:", e);
+            }
+        },
+
+        // --- 5. LÓGICA DE TEMPO & UTILS ---
+        
+        startClock() {
+            setInterval(() => {
+                this.now = Date.now();
+                this.clock = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }, 1000);
+        },
+
+        formatTimer(dateStr) {
+            if (!dateStr) return '--:--';
+            const start = new Date(dateStr).getTime();
+            const totalSeconds = Math.floor((this.now - start) / 1000);
+            
+            if (totalSeconds < 0) return '00:00';
+            
+            const hours = Math.floor(totalSeconds / 3600);
+            const mins = Math.floor((totalSeconds % 3600) / 60);
+            const secs = totalSeconds % 60;
+            
+            if (hours > 0) return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}h`;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        },
+
+        getSlaClasses(dateStr) {
+            const totalSeconds = Math.floor((this.now - new Date(dateStr).getTime()) / 1000);
+            let classes = "timer text-xl font-bold kds-font-mono transition-colors duration-300 ";
+            
+            if (totalSeconds > 1800) return classes + 'text-red-500 animate-pulse'; 
+            else if (totalSeconds > 1200) return classes + 'text-red-500';          
+            else if (totalSeconds > 600) return classes + 'text-yellow-400';        
+            else return classes + 'text-gray-300';
+        },
+        
+        isLateBorder(dateStr) {
+            return ((this.now - new Date(dateStr).getTime()) / 1000) > 1200; 
+        },
+
+        playNotification() {
+            if (this.audioAlert) {
+                this.audioAlert.currentTime = 0;
+                this.audioAlert.play().catch(e => console.log("Som bloqueado pelo navegador"));
+            }
+        },
+
+        // --- 6. HIERARQUIA VISUAL (NOVOS vs ANTIGOS) ---
+        
+        // Verifica se o item é REALMENTE novo e merece destaque (Laranja/Amarelo)
+        isItemNew(item, pedido) {
+            // DETECTA TEXTOS DE AÇÃO (Lógica Robusta)
+            if (item.observacao) {
+                const obs = item.observacao.toUpperCase();
+                if (
+                    obs.includes('ACRESCENTAR MAIS') || 
+                    obs.includes('ACRÉSCIMO') || 
+                    obs.includes('REFORÇO') || 
+                    obs.includes('ADICIONADO')
+                ) {
+                    return true; // Pinta de Laranja/Amarelo
+                }
+            }
+
+            // Lógica Temporal (Backup de segurança)
+            if (!item.created_at || !pedido.created_at) return false;
+            const itemTime = new Date(item.created_at).getTime();
+            const orderTime = new Date(pedido.created_at).getTime();
+            return (itemTime - orderTime) > 60000; 
+        },
+
+        // Helper para saber se o pedido tem ALGUM item novo
+        hasNewItems(pedido) {
+            if (!pedido || !pedido.itens) return false;
+            return pedido.itens.some(i => this.isItemNew(i, pedido));
+        },
+
+        // Verifica se o item é "recente" (últimos 3 min) para o destaque de "Novo Pedido"
+        isRecentItem(itemDate) {
+            if (!itemDate) return false;
+            const diff = (this.now - new Date(itemDate).getTime()) / 1000;
+            return diff < 180; // 3 minutos
+        },
+
+        get pedidosFiltrados() {
+            if (this.filtro === 'todos') return this.pedidos;
+            
+            return this.pedidos.map(p => {
+                const itensDaEstacao = p.itens.filter(i => i.categoria === this.filtro);
+                if (itensDaEstacao.length === 0) return null;
+                return { ...p, itens: itensDaEstacao };
+            }).filter(p => p !== null);
+        }
     }
 }
-
-// Inicializa quando o DOM estiver pronto
-document.addEventListener('DOMContentLoaded', () => {
-    window.kds = new KDSManager();
-});
