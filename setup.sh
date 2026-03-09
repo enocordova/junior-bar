@@ -55,23 +55,33 @@ fi
 
 info "IP local detectado: ${BOLD}$LOCAL_IP${NC}"
 
-APP_URL="https://${LOCAL_IP}:8443"
-SOCKET_URL="https://${LOCAL_IP}:8443"
+# ---------- 2. Confirmar IP e portas com o usuário ----------
 
-# ---------- 2. Confirmar com o usuário ----------
+# Ler portas actuais do .env (se existir), ou usar defaults
+HTTPS_PORT_CURRENT=$(grep -E '^HTTPS_PORT=' .env 2>/dev/null | cut -d'=' -f2)
+HTTP_PORT_CURRENT=$(grep -E '^HTTP_PORT=' .env 2>/dev/null | cut -d'=' -f2)
+HTTPS_PORT="${HTTPS_PORT_CURRENT:-8443}"
+HTTP_PORT="${HTTP_PORT_CURRENT:-8080}"
+
+APP_URL="https://${LOCAL_IP}:${HTTPS_PORT}"
+SOCKET_URL="https://${LOCAL_IP}:${HTTPS_PORT}"
+
 echo ""
-echo -e "  ${BOLD}APP_URL${NC}          → ${GREEN}$APP_URL${NC}"
+echo -e "  ${BOLD}IP local${NC}         → ${GREEN}$LOCAL_IP${NC}"
+echo -e "  ${BOLD}Porta HTTPS${NC}      → ${GREEN}$HTTPS_PORT${NC}  (acesso: https://IP:${HTTPS_PORT})"
 echo -e "  ${BOLD}VITE_SOCKET_URL${NC}  → ${GREEN}$SOCKET_URL${NC}"
 echo ""
 read -rp "$(echo -e "Confirmar? [S/n] ")" confirm
 confirm=${confirm:-S}
 if [[ ! "$confirm" =~ ^[SsYy]$ ]]; then
     echo ""
-    read -rp "Digite o IP desejado: " CUSTOM_IP
-    [[ -z "$CUSTOM_IP" ]] && error "IP não informado."
-    LOCAL_IP="$CUSTOM_IP"
-    APP_URL="https://${LOCAL_IP}:8443"
-    SOCKET_URL="https://${LOCAL_IP}:8443"
+    read -rp "Digite o IP desejado (Enter para manter ${LOCAL_IP}): " CUSTOM_IP
+    [[ -n "$CUSTOM_IP" ]] && LOCAL_IP="$CUSTOM_IP"
+    read -rp "Porta HTTPS (Enter para manter ${HTTPS_PORT}): " CUSTOM_HTTPS
+    [[ -n "$CUSTOM_HTTPS" ]] && HTTPS_PORT="$CUSTOM_HTTPS"
+    HTTP_PORT=$((HTTPS_PORT - 363))  # ex: 8443→8080, 9443→9080
+    APP_URL="https://${LOCAL_IP}:${HTTPS_PORT}"
+    SOCKET_URL="https://${LOCAL_IP}:${HTTPS_PORT}"
 fi
 
 echo ""
@@ -142,6 +152,19 @@ fi
 # ---------- 6. Atualizar URLs no .env ----------
 sed -i "s|^APP_URL=.*|APP_URL=${APP_URL}|" .env
 sed -i "s|^VITE_SOCKET_URL=.*|VITE_SOCKET_URL=${SOCKET_URL}|" .env
+
+# Atualizar portas
+if grep -qE '^HTTPS_PORT=' .env; then
+    sed -i "s|^HTTPS_PORT=.*|HTTPS_PORT=${HTTPS_PORT}|" .env
+else
+    [[ -n "$(tail -c1 .env)" ]] && echo "" >> .env
+    echo "HTTPS_PORT=${HTTPS_PORT}" >> .env
+fi
+if grep -qE '^HTTP_PORT=' .env; then
+    sed -i "s|^HTTP_PORT=.*|HTTP_PORT=${HTTP_PORT}|" .env
+else
+    echo "HTTP_PORT=${HTTP_PORT}" >> .env
+fi
 
 # Garantir que ALLOWED_ORIGIN está presente e atualizado
 if grep -qE '^ALLOWED_ORIGIN=' .env; then
