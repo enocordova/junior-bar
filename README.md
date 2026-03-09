@@ -46,8 +46,9 @@ brew install openssl
 
 ### Windows
 
-No Windows, o `setup.sh` precisa rodar dentro do **WSL2** (Windows Subsystem for Linux). O Docker Desktop para Windows já usa WSL2 internamente.
+> Para um guia completo passo a passo (partindo do zero), consulta: **[docs/instalacao-windows.md](docs/instalacao-windows.md)**
 
+Resumo:
 1. Instale o WSL2: abra o PowerShell como Administrador e rode `wsl --install`
 2. Reinicie o computador
 3. Instale o **Docker Desktop** → [docker.com/get-started](https://www.docker.com/get-started/)
