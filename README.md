@@ -50,9 +50,17 @@ No Windows, o `setup.sh` precisa rodar dentro do **WSL2** (Windows Subsystem for
 
 1. Instale o WSL2: abra o PowerShell como Administrador e rode `wsl --install`
 2. Reinicie o computador
-3. Abra o terminal **Ubuntu** (instalado junto com WSL2)
-4. Instale as ferramentas necessárias: `sudo apt update && sudo apt install -y make git openssl`
-5. Navegue até a pasta do projeto e rode `./setup.sh` normalmente
+3. Instale o **Docker Desktop** → [docker.com/get-started](https://www.docker.com/get-started/)
+   - Durante a instalação, certifica-te que a opção **"Use WSL 2 instead of Hyper-V"** está marcada
+   - Após instalar, abre o Docker Desktop e aguarda ficar ativo (ícone na barra de tarefas)
+4. Abra o terminal **Ubuntu** (instalado junto com WSL2)
+5. Instale as ferramentas necessárias: `sudo apt update && sudo apt install -y make git openssl`
+6. Clone e configure o sistema:
+   ```bash
+   git clone https://github.com/enocordova/junior-bar.git juniorbar
+   cd juniorbar
+   ./setup.sh
+   ```
 
 ---
 
