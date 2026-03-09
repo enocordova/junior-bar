@@ -1,3 +1,21 @@
+# =============================================================================
+# Stage 1: Compilar assets frontend (Vite + Tailwind)
+# =============================================================================
+FROM node:18-alpine AS frontend-builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --ignore-scripts
+
+COPY vite.config.js tailwind.config.js postcss.config.js ./
+COPY resources/ ./resources/
+
+RUN npm run build
+
+# =============================================================================
+# Stage 2: Aplicação PHP
+# =============================================================================
 FROM php:8.3-fpm
 
 # 1. Instalar dependências do sistema
@@ -34,7 +52,10 @@ WORKDIR /var/www
 # 7. Permissões
 RUN chown -R www-data:www-data /var/www
 
-# 8. Entrypoint (migrations + seed + cache na inicialização)
+# 8. Copiar assets compilados pelo stage frontend
+COPY --from=frontend-builder /app/public/build /var/www/public/build
+
+# 9. Entrypoint (migrations + seed + cache na inicialização)
 COPY docker/php/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
