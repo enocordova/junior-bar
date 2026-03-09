@@ -126,7 +126,7 @@ O script vai fazer tudo automaticamente:
 ```
   Acesse em qualquer dispositivo na mesma rede Wi-Fi:
 
-  Painel admin:  https://192.168.1.X:8443/admin
+  Login:         https://192.168.1.X:8443/login
   Garçom:        https://192.168.1.X:8443/garcom
   Cozinha (KDS): https://192.168.1.X:8443/cozinha
   Gerente:       https://192.168.1.X:8443/gerente
@@ -189,10 +189,10 @@ Na primeira instalação no Windows, o MySQL pode demorar **3 a 5 minutos** a in
 
 ```bash
 # Ver o que está a acontecer com o MySQL
-docker logs juniorbar_db --tail 30
+docker logs juniorbar-db-1 --tail 30
 
 # Se aparecer "ready for connections", o problema é outro — ver logs da app:
-docker logs juniorbar_app --tail 30
+docker logs juniorbar-app-1 --tail 30
 ```
 
 Se o MySQL nunca ficar pronto, reinicia o Docker Desktop e tenta novamente:
