@@ -11,6 +11,7 @@ services:
             - .env
         volumes:
             - .:/var/www
+            - build_assets:/var/www/public/build
         networks:
             - juniorbar-network
         depends_on:
@@ -101,4 +102,6 @@ networks:
 # Configuração de Volumes (Persistência de Dados)
 volumes:
     dbdata:
+        driver: local
+    build_assets:
         driver: local
