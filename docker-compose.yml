@@ -1,0 +1,106 @@
+services:
+    # 1. Aplicação Laravel (PHP + Composer)
+    app:
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+        image: juniorbar-app
+        container_name: juniorbar_app
+        restart: unless-stopped
+        working_dir: /var/www
+        volumes:
+            - .:/var/www
+        networks:
+            - juniorbar-network
+        depends_on:
+            db:
+                condition: service_healthy
+        healthcheck:
+            test: ["CMD-SHELL", "kill -0 1 || exit 1"]
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 30s
+
+    # 2. Servidor Web (Nginx)
+    nginx:
+        image: nginx:alpine
+        container_name: juniorbar_nginx
+        restart: unless-stopped
+        ports:
+            # HTTP (redireciona para HTTPS)
+            - "8080:80"
+            # HTTPS
+            - "8443:443"
+        volumes:
+            - .:/var/www
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+            - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+        networks:
+            - juniorbar-network
+        depends_on:
+            app:
+                condition: service_started
+        healthcheck:
+            test: ["CMD-SHELL", "wget --no-check-certificate -qO- https://localhost/up || wget -qO- http://localhost/up || exit 1"]
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 15s
+
+    # 3. Banco de Dados (MySQL 8.0)
+    db:
+        image: mysql:8.0
+        container_name: juniorbar_db
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+            MYSQL_USER: ${DB_USERNAME}
+        volumes:
+            - dbdata:/var/lib/mysql
+        networks:
+            - juniorbar-network
+        command: --default-authentication-plugin=mysql_native_password
+        healthcheck:
+            test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"]
+            interval: 15s
+            timeout: 5s
+            retries: 5
+            start_period: 30s
+
+    # 4. KDS Socket Server (Node.js)
+    socket:
+        image: node:18-alpine
+        container_name: juniorbar_socket
+        restart: unless-stopped
+        working_dir: /app
+        volumes:
+            - ./socket-server:/app
+            - /app/node_modules
+        environment:
+            BROADCAST_SECRET: ${BROADCAST_SECRET}
+            ALLOWED_ORIGIN: ${APP_URL}
+        command: sh -c "npm install && node server.js"
+        # Porta 3000 apenas interna (acesso via proxy Nginx HTTPS)
+        expose:
+            - "3000"
+        networks:
+            - juniorbar-network
+        healthcheck:
+            test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 15s
+
+# Configuração de Redes (Comunicação interna)
+networks:
+    juniorbar-network:
+        driver: bridge
+
+# Configuração de Volumes (Persistência de Dados)
+volumes:
+    dbdata:
+        driver: local

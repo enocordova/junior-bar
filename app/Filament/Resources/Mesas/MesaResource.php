@@ -7,12 +7,10 @@ use App\Models\Mesa;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
-use Filament\Schemas\Schema; // [FIX] Novo padrão v4
+use Filament\Schemas\Schema; // <--- OBRIGATÓRIO
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\IconColumn;
-
-// [FIX] Actions agora vêm do namespace global unificado
 use Filament\Actions\EditAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
@@ -28,11 +26,10 @@ class MesaResource extends Resource
     
     protected static ?string $navigationLabel = 'Mesas';
 
-    // [FIX] Assinatura atualizada: Schema em vez de Form
     public static function form(Schema $schema): Schema
     {
         return $schema
-            ->components([ // [FIX] components() em vez de schema()
+            ->components([
                 TextInput::make('numero')
                     ->required()
                     ->numeric()
@@ -63,13 +60,11 @@ class MesaResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('numero')
-                    ->searchable()
                     ->sortable()
                     ->weight('bold')
                     ->formatStateUsing(fn ($state) => "Mesa {$state}"),
                     
                 TextColumn::make('label')
-                    ->searchable()
                     ->placeholder('-'),
                     
                 TextColumn::make('capacidade')
@@ -84,7 +79,6 @@ class MesaResource extends Resource
                 TextColumn::make('created_at')
                     ->dateTime('d/m/Y H:i')
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true)
                     ->label('Criada em'),
             ])
             ->defaultSort('numero')

@@ -6,7 +6,17 @@ export default {
     "./resources/**/*.vue",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        'jr-green': '#7ed957',
+        'jr-brown': '#bf7854',
+        'jr-orange': '#efa324',
+        'jr-gray': '#4d4a52',
+        'kds-bg': '#0c0c0e',
+        'kds-card': '#18181b',
+        'kds-separator': '#27272a',
+      },
+    },
   },
   plugins: [],
 }

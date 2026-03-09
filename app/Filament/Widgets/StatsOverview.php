@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\DB;
 
 class StatsOverview extends BaseWidget
 {
-    // [CORREÇÃO] Removi a palavra 'static' aqui. 
-    // Agora deve funcionar perfeitamente.
+    // CORREÇÃO: Removemos a palavra 'static' aqui.
+    // Agora é compatível com a classe pai do Filament.
     protected ?string $pollingInterval = '15s';
 
     protected function getStats(): array
@@ -34,18 +34,19 @@ class StatsOverview extends BaseWidget
             Stat::make('Caixa do Dia', '€ ' . number_format($faturacaoHoje, 2, ',', '.'))
                 ->description('Vendas finalizadas hoje')
                 ->descriptionIcon('heroicon-m-banknotes')
-                ->color('success') 
-                ->chart([7, 3, 10, 5, 15, 4, 17]), 
+                ->color('success')
+                // Removemos o chart estático para ficar mais limpo, ou pode manter se quiser dados fake
+                ->chart([7, 3, 10, 5, 15, 4, 17]),
 
             Stat::make('Cozinha / Bar', $pedidosFila)
                 ->description('Pedidos em andamento')
                 ->descriptionIcon('heroicon-m-fire')
-                ->color('warning'), 
+                ->color('warning'),
 
             Stat::make('Mesas Ocupadas', $mesasAtivas)
                 ->description('Clientes atendidos agora')
                 ->descriptionIcon('heroicon-m-user-group')
-                ->color('primary'), 
+                ->color('primary'),
         ];
     }
 }

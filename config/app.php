@@ -54,9 +54,9 @@ return [
     | AQUI ESTÁ A MUDANÇA PRINCIPAL: pt_PT
     */
 
-    'locale' => 'pt_PT',
+    'locale' => 'pt',
 
-    'fallback_locale' => 'en',
+    'fallback_locale' => 'pt',
 
     'faker_locale' => 'pt_PT',
 
@@ -108,5 +108,24 @@ return [
     'aliases' => Facade::defaultAliases()->merge([
         // 'Example' => App\Facades\Example::class,
     ])->toArray(),
+
+    /*
+    |--------------------------------------------------------------------------
+    | KDS Socket Configuration (Custom)
+    |--------------------------------------------------------------------------
+    |
+    | Aqui registamos as variáveis de ambiente que definem onde está o servidor
+    | Node.js. Isto permite mudar IPs no .env sem mexer no código.
+    |
+    */
+
+    // URL interna: Usada pelo Laravel (Backend) para enviar POSTs ao Node
+    'node_internal_url' => env('NODE_INTERNAL_URL', 'http://socket:3000'),
+
+    // URL pública: Usada pelo Javascript (Frontend) para conectar o WebSocket
+    'node_public_url' => env('VITE_SOCKET_URL', 'http://localhost:3000'),
+
+    // Segredo partilhado para autenticar broadcasts Laravel -> Node
+    'broadcast_secret' => env('BROADCAST_SECRET', 'mudar-em-producao'),
 
 ];

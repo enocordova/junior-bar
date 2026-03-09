@@ -13,9 +13,15 @@ return new class extends Migration
     {
         Schema::create('configuracoes', function (Blueprint $table) {
             $table->id();
-            $table->string('chave')->unique(); // Ex: 'impressora_cozinha_ip'
-            $table->text('valor')->nullable(); // Ex: '192.168.1.200'
-            $table->string('descricao')->nullable(); // Ex: 'IP da Impressora da Cozinha'
+            
+            // Estrutura Key-Value para suportar o Seeder e o Model atuais
+            $table->string('grupo')->nullable()->index(); // Ex: 'Identidade', 'Financeiro'
+            $table->string('titulo')->nullable();         // Ex: 'Nome do Restaurante'
+            $table->string('chave')->unique()->index();   // Ex: 'nome_restaurante'
+            $table->text('valor')->nullable();            // Ex: 'Junior BAR'
+            $table->string('tipo')->default('text');      // Ex: 'text', 'number', 'boolean'
+            $table->text('descricao')->nullable();        // Explicação do campo
+            
             $table->timestamps();
         });
     }

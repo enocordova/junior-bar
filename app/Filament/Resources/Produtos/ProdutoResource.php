@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Produtos;
 
 use App\Filament\Resources\Produtos\Pages;
 use App\Models\Produto;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
@@ -18,6 +19,8 @@ use Filament\Actions\DeleteBulkAction;
 
 class ProdutoResource extends Resource
 {
+    protected static ?int $navigationSort = 1;
+    
     protected static ?string $model = Produto::class;
 
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-stack';
@@ -26,7 +29,6 @@ class ProdutoResource extends Resource
     
     protected static ?string $navigationLabel = 'Produtos';
 
-    // [IMPORTANTE] Traduções do Modelo
     protected static ?string $modelLabel = 'Produto';
     protected static ?string $pluralModelLabel = 'Produtos';
 
@@ -39,11 +41,18 @@ class ProdutoResource extends Resource
                     ->label('Nome do Produto')
                     ->maxLength(255),
                     
-                TextInput::make('categoria')
+                Select::make('categoria')
                     ->required()
-                    ->placeholder('Ex: Lanches, Bebidas')
                     ->label('Categoria')
-                    ->maxLength(255),
+                    ->options([
+                        'Espetinhos'      => 'Espetinhos',
+                        'Bebidas'         => 'Bebidas',
+                        'Porções'         => 'Porções',
+                        'Caldos'          => 'Caldos',
+                        'Sucos'           => 'Sucos',
+                        'Lanches'         => 'Lanches',
+                        'Acompanhamentos' => 'Acompanhamentos',
+                    ]),
                     
                 TextInput::make('preco')
                     ->required()
@@ -69,11 +78,10 @@ class ProdutoResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('nome')->searchable()->weight('bold'),
-                TextColumn::make('categoria')->searchable()->badge(),
+                TextColumn::make('nome')->weight('bold'),
+                TextColumn::make('categoria')->badge(),
                 TextColumn::make('preco')->money('EUR')->sortable(),
                 IconColumn::make('ativo')->boolean()->label('Ativo'),
-                TextColumn::make('created_at')->dateTime('d/m/Y H:i')->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('categoria')
             ->actions([

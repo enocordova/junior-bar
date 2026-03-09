@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use App\Http\Middleware\ConfigurarTimezone;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -12,7 +13,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        $middleware->web(append: [
+            \App\Http\Middleware\ConfigurarTimezone::class,
+        ]);
+
+        $middleware->alias([
+            'role' => \App\Http\Middleware\VerificarRole::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

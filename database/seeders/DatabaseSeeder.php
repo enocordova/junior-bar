@@ -3,24 +3,31 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // firstOrCreate garante idempotência: seguro rodar várias vezes
+        $admin = User::firstOrCreate(
+            ['email' => env('SEED_ADMIN_EMAIL', 'admin')],
+            ['name' => 'Gerente Admin', 'password' => Hash::make(env('SEED_ADMIN_PASSWORD', 'mudar-em-producao'))]
+        );
+        $admin->forceFill(['role' => 'admin'])->save();
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        $garcom = User::firstOrCreate(
+            ['email' => env('SEED_GARCOM_EMAIL', 'garcom')],
+            ['name' => 'Garçom', 'password' => Hash::make(env('SEED_GARCOM_PASSWORD', 'mudar-em-producao'))]
+        );
+        $garcom->forceFill(['role' => 'garcom'])->save();
+
+        $cozinha = User::firstOrCreate(
+            ['email' => env('SEED_COZINHA_EMAIL', 'cozinha')],
+            ['name' => 'Cozinha', 'password' => Hash::make(env('SEED_COZINHA_PASSWORD', 'mudar-em-producao'))]
+        );
+        $cozinha->forceFill(['role' => 'cozinha'])->save();
 
         $this->call(ProdutoSeeder::class);
     }

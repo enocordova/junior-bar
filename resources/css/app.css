@@ -4,20 +4,95 @@
 @tailwind components;
 @tailwind utilities;
 
-/* KDS Utilities */
+/* ═══════════════════════════════════════
+   TIPOGRAFIA
+   ═══════════════════════════════════════ */
 .kds-font-mono { font-family: var(--font-mono); }
 .kds-font-ui { font-family: var(--font-ui); }
 
-/* Animação de Entrada Otimizada (GPU accelerated) */
+/* ═══════════════════════════════════════
+   ANIMAÇÕES GLOBAIS
+   ═══════════════════════════════════════ */
+
+/* Entrada de card (Cozinha KDS) */
 .ticket-enter {
     animation: slideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-
 @keyframes slideIn {
     from { opacity: 0; transform: translateY(10px) scale(0.98); }
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
-/* Hide Scrollbar but keep functionality (App Feel) */
+
+/* Fade in up (Modais, Toasts, Cards) */
+.animate-fade-in-up,
+.animate-fade-in {
+    animation: fadeInUp 0.3s ease-out forwards;
+}
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Badge pop (Garçom - contador do carrinho) */
+.animate-badge {
+    animation: badge-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background-color: var(--jr-green) !important;
+    color: black !important;
+}
+@keyframes badge-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.6); }
+    100% { transform: scale(1); }
+}
+
+/* Undo progress circular (Cozinha - desfazer) */
+@keyframes undo-progress {
+    from { stroke-dashoffset: 0; }
+    to   { stroke-dashoffset: 94.25; }
+}
+
+/* Pulso verde (Indicador online) */
+@keyframes pulse-green {
+    0% { box-shadow: 0 0 0 0 rgba(126, 217, 87, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(126, 217, 87, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(126, 217, 87, 0); }
+}
+.status-online {
+    animation: pulse-green 2s infinite;
+}
+
+/* ═══════════════════════════════════════
+   UTILITIES GLOBAIS
+   ═══════════════════════════════════════ */
+
+/* Bloqueia seleção de texto */
+.no-select {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Fix autofill styling (Dark theme) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px var(--kds-card) inset !important;
+    -webkit-text-fill-color: white !important;
+}
+
+/* ═══════════════════════════════════════
+   SCROLL & TOUCH
+   ═══════════════════════════════════════ */
+
+html {
+    scroll-behavior: smooth;
+}
+
+* {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Esconder scrollbar mantendo funcionalidade */
 .scrollbar-hide::-webkit-scrollbar {
     display: none;
 }
@@ -26,7 +101,58 @@
     scrollbar-width: none;
 }
 
-/* Touch feedback improvement */
+.overflow-y-auto,
+.overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    scroll-behavior: smooth;
+}
+
+/* Scroll horizontal com snap (categorias, tabs) */
+.snap-x {
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+}
+.snap-start {
+    scroll-snap-align: start;
+}
+
 .touch-manipulation {
     touch-action: manipulation;
+}
+
+/* Bloqueia comportamento de toque do browser (App feel) */
+body {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+    overscroll-behavior-y: contain;
+}
+
+/* Permite selecionar texto em inputs */
+input, textarea {
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+/* ═══════════════════════════════════════
+   SAFE AREA (Notch / Dynamic Island / Status Bar)
+   ═══════════════════════════════════════ */
+.safe-area-pt {
+    /* Webkit legacy (iOS 11.0-11.1) */
+    padding-top: constant(safe-area-inset-top);
+    /* Modern (iOS 11.2+, Android) */
+    padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-area-pb {
+    padding-bottom: constant(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-area-top-spacer {
+    height: constant(safe-area-inset-top);
+    height: env(safe-area-inset-top, 0px);
+    min-height: 0;
 }

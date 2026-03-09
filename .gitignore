@@ -22,3 +22,7 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Certificado SSL gerado pelo setup.sh (específico de cada máquina)
+docker/nginx/ssl/server.key
+docker/nginx/ssl/server.crt
