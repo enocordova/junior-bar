@@ -183,6 +183,27 @@ Depois reinicia o Docker Desktop.
 
 ---
 
+**502 Bad Gateway / "aguardando MySQL" em loop**
+
+Na primeira instalação no Windows, o MySQL pode demorar **3 a 5 minutos** a inicializar (normal no WSL2 — o sistema de ficheiros é mais lento). O sistema aguarda até 5 minutos automaticamente. Se o erro persistir mesmo após esse tempo:
+
+```bash
+# Ver o que está a acontecer com o MySQL
+docker logs juniorbar_db --tail 30
+
+# Se aparecer "ready for connections", o problema é outro — ver logs da app:
+docker logs juniorbar_app --tail 30
+```
+
+Se o MySQL nunca ficar pronto, reinicia o Docker Desktop e tenta novamente:
+```bash
+make down
+docker compose down -v
+./setup.sh
+```
+
+---
+
 **"permission denied" ao correr `./setup.sh`**
 
 No terminal Ubuntu:

@@ -66,9 +66,9 @@ services:
         healthcheck:
             test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"]
             interval: 15s
-            timeout: 5s
-            retries: 5
-            start_period: 30s
+            timeout: 10s
+            retries: 10
+            start_period: 120s
 
     # 4. KDS Socket Server (Node.js)
     socket:

@@ -35,7 +35,7 @@ DB_USER="${DB_USERNAME:-root}"
 DB_PASS="${DB_PASSWORD}"
 DB_NAME="${DB_DATABASE:-juniorbar}"
 
-MAX_TRIES=30
+MAX_TRIES=60
 TRIES=0
 
 until php -r "
@@ -56,7 +56,7 @@ try {
         exit 1
     fi
     log "Tentativa ${TRIES}/${MAX_TRIES} — aguardando MySQL..."
-    sleep 2
+    sleep 5
 done
 
 log "Banco de dados pronto."
