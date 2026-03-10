@@ -23,11 +23,11 @@ up: ## Inicia todos os containers
 down: ## Para todos os containers
 	$(DC) down
 
-restart: ## Reinicia todos os containers
-	$(DC) restart
+restart: ## Reinicia todos os containers (relê .env)
+	$(DC) up -d --force-recreate
 
-rebuild: ## Reconstrói a imagem e inicia
-	$(DC) up -d --build
+rebuild: ## Reconstrói a imagem e inicia (relê .env)
+	$(DC) build app && $(DC) up -d --force-recreate app
 
 logs: ## Mostra logs em tempo real
 	$(DC) logs -f
@@ -92,10 +92,16 @@ shell-db: ## Abre o MySQL dentro do container
 # -----------------------------------------------------------------------------
 # DEPLOY / ATUALIZAÇÃO
 # -----------------------------------------------------------------------------
-deploy: ## Atualiza o projeto sem downtime
+deploy: ## Deploy PHP/config (sem rebuild de imagem)
 	git pull
 	$(DC) exec app composer install --no-dev --optimize-autoloader
 	$(MAKE) cache
 	$(DC) exec app php artisan migrate --force
 	$(MAKE) fix-perms
 	@echo "Deploy concluído."
+
+deploy-assets: ## Deploy completo com rebuild de assets JS/CSS
+	git pull
+	$(DC) build app
+	$(DC) up -d --force-recreate app
+	@echo "Deploy com assets concluído."
