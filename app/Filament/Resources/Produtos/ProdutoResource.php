@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Produtos;
 
 use App\Filament\Resources\Produtos\Pages;
+use App\Models\Configuracao;
 use App\Models\Produto;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -57,7 +58,7 @@ class ProdutoResource extends Resource
                 TextInput::make('preco')
                     ->required()
                     ->numeric()
-                    ->prefix('€')
+                    ->prefix(Configuracao::countryPreset()['currency_symbol'])
                     ->default(0.00)
                     ->label('Preço'),
                     
@@ -80,7 +81,7 @@ class ProdutoResource extends Resource
             ->columns([
                 TextColumn::make('nome')->weight('bold'),
                 TextColumn::make('categoria')->badge(),
-                TextColumn::make('preco')->money('EUR')->sortable(),
+                TextColumn::make('preco')->money(Configuracao::countryPreset()['currency_code'])->sortable(),
                 IconColumn::make('ativo')->boolean()->label('Ativo'),
             ])
             ->defaultSort('categoria')

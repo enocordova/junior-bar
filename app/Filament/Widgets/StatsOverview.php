@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use App\Models\Configuracao;
 use App\Models\Pedido;
 use App\Models\PedidoItem;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +32,7 @@ class StatsOverview extends BaseWidget
             ->count();
 
         return [
-            Stat::make('Caixa do Dia', '€ ' . number_format($faturacaoHoje, 2, ',', '.'))
+            Stat::make('Caixa do Dia', Configuracao::countryPreset()['currency_symbol'] . ' ' . number_format($faturacaoHoje, 2, ',', '.'))
                 ->description('Vendas finalizadas hoje')
                 ->descriptionIcon('heroicon-m-banknotes')
                 ->color('success')

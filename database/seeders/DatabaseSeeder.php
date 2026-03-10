@@ -30,5 +30,6 @@ class DatabaseSeeder extends Seeder
         $cozinha->forceFill(['role' => 'cozinha'])->save();
 
         $this->call(ProdutoSeeder::class);
+        $this->call(ConfiguracaoSeeder::class);
     }
 }

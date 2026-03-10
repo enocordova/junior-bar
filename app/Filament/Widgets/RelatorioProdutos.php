@@ -5,6 +5,7 @@ namespace App\Filament\Widgets;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
+use App\Models\Configuracao;
 use App\Models\PedidoItem;
 use Illuminate\Support\Facades\DB;
 use Filament\Tables\Columns\TextColumn;
@@ -67,7 +68,7 @@ class RelatorioProdutos extends BaseWidget
 
                 TextColumn::make('total_valor')
                     ->label('Faturamento')
-                    ->money('EUR')
+                    ->money(Configuracao::countryPreset()['currency_code'])
                     ->sortable()
                     ->weight('bold')
                     ->color('success'),
