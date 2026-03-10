@@ -413,17 +413,25 @@ export default function gerenteApp() {
             const nomeBar = window.AppConfig?.nomeBar || 'Junior BAR';
 
             const dateLocale = window.AppConfig?.dateLocale || 'pt-PT';
-            const w = window.open('', '', 'width=350,height=600');
+            const w = window.open('', '', 'width=310,height=600');
             w.document.write(`
                 <html>
                 <head>
                     <title>${__t('table').toUpperCase()} ${m.numero}</title>
                     <style>
-                        body { font-family: 'Courier New', monospace; padding: 20px; font-size: 12px; }
-                        .header { text-align: center; margin-bottom: 20px; }
-                        .row { display: flex; justify-content: space-between; margin-bottom: 5px; }
-                        .total { font-weight: bold; font-size: 1.4em; border-top: 1px dashed #000; margin-top: 10px; padding-top: 10px; }
-                        .qty { font-weight: bold; margin-right: 5px; }
+                        @page { size: 80mm auto; margin: 2mm 3mm; }
+                        * { color: #000 !important; background: transparent !important; box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        body { font-family: 'Courier New', monospace; padding: 4px 6px; margin: 0; width: 100%; font-size: 11pt; font-weight: 700; }
+                        .header { text-align: center; margin-bottom: 8px; }
+                        .header h2 { font-size: 13pt; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 0 0 2px; }
+                        .header h3 { font-size: 12pt; font-weight: 700; margin: 0 0 2px; }
+                        .header p  { font-size: 10pt; font-weight: 700; margin: 0; }
+                        .row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 11pt; font-weight: 700; gap: 4px; }
+                        .row span:first-child { flex: 1; overflow: hidden; }
+                        .row span:last-child { white-space: nowrap; }
+                        .total { font-weight: 900; font-size: 13pt; border-top: 2px solid #000; margin-top: 8px; padding-top: 6px; }
+                        .qty { font-weight: 900; }
+                        hr { border: none; border-top: 1px dashed #000; margin: 6px 0; }
                     </style>
                 </head>
                 <body>
@@ -432,7 +440,7 @@ export default function gerenteApp() {
                         <h3>${__t('table').toUpperCase()} ${m.numero}</h3>
                         <p>${new Date().toLocaleString(dateLocale)}</p>
                     </div>
-                    <hr style="border-top: 1px dashed #000;">
+                    <hr>
                     ${itens.map(i => `
                         <div class="row">
                             <span><span class="qty">${i.quantidade}x</span> ${i.nome_produto}</span>
