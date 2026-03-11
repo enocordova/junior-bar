@@ -52,15 +52,21 @@ class PedidoController extends Controller
                 }
 
                 // 2. Processamento dos Itens
+                // Pré-calcula a rodada uma vez (todos os itens do mesmo envio ficam na mesma rodada)
+                $proximaRodada = 1;
+                if ($pedido->status === 'preparo') {
+                    $proximaRodada = ($pedido->itens()->max('rodada') ?? 0) + 1;
+                }
+
                 foreach ($validated['itens'] as $item) {
                     $produtoReal = $produtosDb[$item['id_produto']];
                     $obsItem = $item['obs'] ?? null;
 
                     // --- CENÁRIO: RASCUNHO (Pendente) ---
-                    // Funde tudo silenciosamente.
+                    // Funde tudo silenciosamente na rodada 1.
                     if ($pedido->status === 'pendente') {
                         $query = $pedido->itens()->where('nome_produto', $produtoReal->nome);
-                        
+
                         if (is_null($obsItem)) $query->whereNull('observacao');
                         else $query->where('observacao', $obsItem);
 
@@ -72,42 +78,24 @@ class PedidoController extends Controller
                         } else {
                             $pedido->itens()->create([
                                 'nome_produto' => $produtoReal->nome,
-                                'quantidade' => $item['qtd'],
-                                'observacao' => $obsItem,
-                                'preco' => $produtoReal->preco,
-                                'categoria' => $produtoReal->categoria
+                                'quantidade'   => $item['qtd'],
+                                'observacao'   => $obsItem,
+                                'preco'        => $produtoReal->preco,
+                                'categoria'    => $produtoReal->categoria,
+                                'rodada'       => 1,
                             ]);
                         }
-                    }
-                    else {
-                        // --- CENÁRIO: EM PREPARO (Smart Merge) ---
-                        // Procura se JÁ EXISTE uma linha de acréscimo "viva"
-                        $linhaAdicional = $pedido->itens()
-                            ->where('nome_produto', $produtoReal->nome)
-                            ->where('observacao', 'like', 'Acrescentar +%') // A chave da fusão
-                            ->latest()
-                            ->first();
-
-                        if ($linhaAdicional) {
-                            // FUSÃO: Soma o novo pedido ao que já era acréscimo
-                            $novaQtdTotal = $linhaAdicional->quantidade + $item['qtd'];
-                            
-                            $linhaAdicional->quantidade = $novaQtdTotal;
-                            $linhaAdicional->observacao = "Acrescentar + {$novaQtdTotal}"; 
-                            $linhaAdicional->save();
-                        } else {
-                            // Primeira vez que adiciona extra? Cria linha nova.
-                            $obsFinal = "Acrescentar + {$item['qtd']}";
-                            if ($obsItem) $obsFinal .= " [{$obsItem}]";
-
-                            $pedido->itens()->create([
-                                'nome_produto' => $produtoReal->nome,
-                                'quantidade' => $item['qtd'],
-                                'observacao' => $obsFinal,
-                                'preco' => $produtoReal->preco,
-                                'categoria' => $produtoReal->categoria
-                            ]);
-                        }
+                    } else {
+                        // --- CENÁRIO: EM PREPARO → Nova rodada ---
+                        // Cada envio do garçom cria uma rodada independente (sem fusão, sem "Acrescentar").
+                        $pedido->itens()->create([
+                            'nome_produto' => $produtoReal->nome,
+                            'quantidade'   => $item['qtd'],
+                            'observacao'   => $obsItem,
+                            'preco'        => $produtoReal->preco,
+                            'categoria'    => $produtoReal->categoria,
+                            'rodada'       => $proximaRodada,
+                        ]);
                     }
                 }
 
@@ -157,25 +145,31 @@ class PedidoController extends Controller
             }
 
             if ($pedido->status === 'preparo') {
-                // Pedido já em preparo — marcar como "Acrescentar"
-                $obsText = "Acrescentar + {$qtd}";
-                if ($obsUsuario) $obsText .= " [{$obsUsuario}]";
+                // Pedido em preparo — adiciona à última rodada não concluída (gerente pode ir acrescentando).
+                $rodadasConcluidas = $pedido->rodadas_concluidas ?? [];
+                $maxRodada = $pedido->itens()->max('rodada') ?? 1;
 
-                $linhaExistente = !$obsUsuario
-                    ? $pedido->itens()->where('nome_produto', $produto->nome)->where('observacao', 'like', 'Acrescentar +%')->whereRaw("observacao NOT LIKE '%[%'")->first()
+                // Se a rodada máxima já está concluída, cria uma nova; caso contrário reutiliza.
+                $rodadaAlvo = in_array($maxRodada, $rodadasConcluidas) ? $maxRodada + 1 : $maxRodada;
+
+                $obsText = $obsUsuario ?? null;
+
+                // Dentro da mesma rodada alvo, funde itens iguais sem observação
+                $linhaExistente = is_null($obsText)
+                    ? $pedido->itens()->where('nome_produto', $produto->nome)->where('rodada', $rodadaAlvo)->whereNull('observacao')->first()
                     : null;
 
                 if ($linhaExistente) {
                     $linhaExistente->quantidade += $qtd;
-                    $linhaExistente->observacao = "Acrescentar + {$linhaExistente->quantidade}";
                     $linhaExistente->save();
                 } else {
                     $pedido->itens()->create([
                         'nome_produto' => $produto->nome,
-                        'quantidade' => $qtd,
-                        'preco' => $produto->preco,
-                        'categoria' => $produto->categoria,
-                        'observacao' => $obsText,
+                        'quantidade'   => $qtd,
+                        'preco'        => $produto->preco,
+                        'categoria'    => $produto->categoria,
+                        'observacao'   => $obsText,
+                        'rodada'       => $rodadaAlvo,
                     ]);
                 }
             } else {
@@ -310,6 +304,85 @@ class PedidoController extends Controller
     }
 
     // --- MÉTODOS AUXILIARES ---
+
+    /**
+     * =========================================================================
+     * COZINHA: FINALIZAR UMA RODADA ESPECÍFICA
+     * =========================================================================
+     */
+    // Mapeamento estação → categorias (fonte única de verdade no backend)
+    private const ESTACAO_CATEGORIAS = [
+        'cozinha'       => ['porções', 'caldos', 'lanches', 'acompanhamentos'],
+        'churrasqueira' => ['espetinhos'],
+        'bebidas'       => ['bebidas', 'sucos'],
+    ];
+
+    public function finalizarRodada(Request $request, $pedidoId, $rodada)
+    {
+        $pedido = Pedido::with('itens')->findOrFail($pedidoId);
+        $rodada  = (int) $rodada;
+        $estacao = $request->input('estacao', 'todos'); // 'todos' | 'cozinha' | 'churrasqueira' | 'bebidas'
+
+        // Marca como pronto apenas os itens da estação + rodada solicitada
+        $query = $pedido->itens()->where('rodada', $rodada)->where('status', 'pendente');
+
+        if ($estacao !== 'todos' && isset(self::ESTACAO_CATEGORIAS[$estacao])) {
+            $query->whereIn('categoria', self::ESTACAO_CATEGORIAS[$estacao]);
+        }
+
+        $query->update(['status' => 'pronto']);
+
+        // Recarrega itens com estados atualizados
+        $pedido->load('itens');
+
+        // Pedido só vai a "pronto" quando TODOS os itens de TODAS as estações estiverem prontos
+        $todasConcluidas = $pedido->itens->every(fn($i) => $i->status === 'pronto');
+
+        if ($todasConcluidas) {
+            $pedido->status = 'pronto';
+            $pedido->save();
+            $this->broadcastToNode('pedido_pronto', ['id' => $pedido->id, 'mesa' => $pedido->mesa]);
+        } else {
+            // 'item_status' — não dispara badge "ALTERADO" nem notificação (acção da cozinha)
+            $pedido->event_type = 'item_status';
+            $this->broadcastToNode('cozinha_novo_pedido', $pedido);
+        }
+
+        return response()->json([
+            'status'           => 'sucesso',
+            'todas_concluidas' => $todasConcluidas,
+        ]);
+    }
+
+    /**
+     * =========================================================================
+     * COZINHA: TOGGLE DE UM ITEM INDIVIDUAL (pendente ↔ pronto)
+     * =========================================================================
+     */
+    public function toggleItemPronto(PedidoItem $item)
+    {
+        $item->status = $item->status === 'pronto' ? 'pendente' : 'pronto';
+        $item->save();
+
+        $pedido = Pedido::with('itens')->findOrFail($item->pedido_id);
+
+        $todasConcluidas = $pedido->itens->every(fn($i) => $i->status === 'pronto');
+
+        if ($todasConcluidas) {
+            $pedido->status = 'pronto';
+            $pedido->save();
+            $this->broadcastToNode('pedido_pronto', ['id' => $pedido->id, 'mesa' => $pedido->mesa]);
+        } else {
+            // 'item_status' — não dispara badge "ALTERADO" nem notificação (acção da cozinha)
+            $pedido->event_type = 'item_status';
+            $this->broadcastToNode('cozinha_novo_pedido', $pedido);
+        }
+
+        return response()->json([
+            'novo_status'      => $item->status,
+            'todas_concluidas' => $todasConcluidas,
+        ]);
+    }
 
     public function listarAtivos() {
         return Pedido::with('itens')

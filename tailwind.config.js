@@ -18,5 +18,11 @@ export default {
       },
     },
   },
+  safelist: [
+    'bg-jr-green/5', 'bg-jr-green/10', 'bg-jr-green/15', 'bg-jr-green/20',
+    'border-jr-green/20', 'border-jr-green/30', 'border-jr-green/40',
+    'text-jr-green',
+    'border-l-jr-green', 'border-l-jr-brown', 'border-l-jr-orange',
+  ],
   plugins: [],
 }

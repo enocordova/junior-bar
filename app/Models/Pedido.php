@@ -9,7 +9,11 @@ class Pedido extends Model
 {
     use HasFactory;
     protected $table = 'pedidos'; 
-    protected $fillable = ['mesa', 'status', 'user_id'];
+    protected $fillable = ['mesa', 'status', 'user_id', 'rodadas_concluidas'];
+
+    protected $casts = [
+        'rodadas_concluidas' => 'array',
+    ];
 
     public function itens()
     {

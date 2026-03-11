@@ -139,7 +139,7 @@ export default function gerenteApp() {
                     }
                     mapa[chave].quantidade += item.quantidade;
                     mapa[chave].ids_reais.push(item.id);
-                    let statusAtual = pedido.status || 'pendente';
+                    let statusAtual = item.status || pedido.status || 'pendente';
                     if (mapa[chave].statusBreakdown[statusAtual] !== undefined) {
                         mapa[chave].statusBreakdown[statusAtual] += item.quantidade;
                     }

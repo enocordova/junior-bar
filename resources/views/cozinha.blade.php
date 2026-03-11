@@ -86,25 +86,24 @@
         <div class="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 auto-rows-max items-start">
 
             <template x-for="pedido in pedidosFiltrados" :key="pedido.id">
-                
+
                 {{-- CARD DE PEDIDO --}}
-                <div x-show="!pedidosFinalizando.includes(pedido.id)"
-                     x-transition:enter="transition ease-out duration-300"
+                <div x-transition:enter="transition ease-out duration-300"
                      x-transition:enter-start="opacity-0 scale-90"
                      x-transition:enter-end="opacity-100 scale-100"
                      x-transition:leave="transition ease-in duration-300"
                      x-transition:leave-start="opacity-100 scale-100"
                      x-transition:leave-end="opacity-0 scale-90"
-                     class="relative bg-[#1e1e1e] border-t-4 rounded-b-lg shadow-lg flex flex-col group transition-all duration-300"
+                     class="relative bg-[#18181b] rounded-xl overflow-hidden shadow-xl flex flex-col group transition-all duration-300 border border-gray-700/30 border-l-4"
                      :class="{
-                        'border-[#7ed957]': pedido.status === 'pendente' && !isUpdated(pedido.id),
-                        'border-[#bf7854]': pedido.status === 'preparo' && !isUpdated(pedido.id),
-                        'border-[#efa324] animate-pulse': isLateBorder(pedido.created_at) && !isUpdated(pedido.id),
-                        'border-[#efa324] ring-4 ring-[#efa324]/20 z-10 scale-[1.02]': isUpdated(pedido.id)
+                        'border-l-[#7ed957]': pedido.status === 'pendente' && !isUpdated(pedido.id) && !isLateBorder(pedido.created_at),
+                        'border-l-[#bf7854]': pedido.status === 'preparo' && !isUpdated(pedido.id) && !isLateBorder(pedido.created_at),
+                        'border-l-[#efa324] animate-pulse': isLateBorder(pedido.created_at) && !isUpdated(pedido.id),
+                        'border-l-[#efa324] ring-2 ring-[#efa324]/25 z-10 scale-[1.02]': isUpdated(pedido.id)
                      }">
-                    
+
                     {{-- HEADER DO CARD --}}
-                    <div class="p-4 bg-white/5 flex justify-between items-start border-b border-white/5 shrink-0">
+                    <div class="p-4 bg-black/30 flex justify-between items-start border-b border-gray-700/40 shrink-0">
                         <div>
                             <h2 class="text-3xl font-black text-white tracking-tighter leading-none">
                                 <span x-text="__t('table')"></span> <span x-text="pedido.mesa"></span>
@@ -122,47 +121,129 @@
 
                         <div class="text-right">
                             <div :class="getSlaClasses(pedido.created_at)" x-text="formatTimer(pedido.created_at)"></div>
-                            <div class="text-[10px] uppercase font-bold tracking-wider mt-1" :class="pedido.status === 'preparo' ? 'text-[#bf7854] animate-pulse' : 'text-gray-500'" x-text="pedido.status === 'pendente' ? __t('waiting') : __t('preparing_status')"></div>
+                            <div class="text-[10px] uppercase font-bold tracking-wider mt-1"
+                                 :class="pedido.status === 'preparo' ? 'text-[#bf7854] animate-pulse' : 'text-gray-500'"
+                                 x-text="pedido.status === 'pendente' ? __t('waiting') : __t('preparing_status')"></div>
                         </div>
                     </div>
 
-                    {{-- LISTA DE ITENS --}}
-                    <div class="p-4 flex-1">
-                        <ul class="space-y-4">
-                            <template x-for="item in pedido.itens" :key="item.id">
-                                <li class="flex justify-between items-start border-b border-gray-800 pb-3 last:border-0 transition-all duration-500"
-                                    :class="{
-                                        'opacity-40 grayscale': pedido.status === 'preparo' && (hasNewItems(pedido) && !isItemNew(item, pedido)),
-                                        'bg-[#efa324]/10 p-2 rounded-lg -mx-2 border-l-4 border-[#efa324]': isItemNew(item, pedido)
-                                    }">
-                                    <div class="flex-1 pr-3">
-                                        <div class="flex items-center gap-2 flex-wrap">
-                                            <span class="text-xl md:text-2xl font-bold leading-tight block mb-1" :class="isItemNew(item, pedido) ? 'text-white' : 'text-gray-300'" x-text="item.nome_produto"></span>
-                                            <template x-if="isItemNew(item, pedido) && pedido.status === 'preparo'">
-                                                <span class="bg-[#efa324] text-black text-[9px] font-black px-1.5 py-0.5 rounded uppercase animate-pulse" x-text="__t('added')"></span>
-                                            </template>
-                                        </div>
-                                        <template x-if="item.observacao">
-                                            <div class="text-sm font-bold px-2 py-1 rounded inline-block mt-1 shadow-sm" :class="isItemNew(item, pedido) ? 'bg-[#efa324] text-black' : 'bg-gray-800 text-[#efa324]'">
-                                                <span x-text="'⚠️ ' + item.observacao"></span>
-                                            </div>
+                    {{-- RODADAS --}}
+                    <div class="flex-1 divide-y divide-gray-700/50">
+                        <template x-for="rodada in getRodadas(pedido)" :key="rodada.numero">
+                            <div class="p-4" :class="rodada.concluida ? 'opacity-40' : ''">
+
+                                {{-- Cabeçalho da rodada (sempre visível para mostrar progresso) --}}
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <template x-if="getRodadas(pedido).length > 1">
+                                            <span class="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded"
+                                                  :class="rodada.concluida
+                                                      ? 'bg-gray-700 text-gray-400'
+                                                      : (rodada.numero === 1 ? 'bg-[#bf7854]/20 text-[#bf7854] border border-[#bf7854]/40' : 'bg-[#efa324]/15 text-[#efa324] border border-[#efa324]/40 animate-pulse')"
+                                                  x-text="'Rodada ' + rodada.numero"></span>
+                                        </template>
+                                        <template x-if="rodada.concluida">
+                                            <span class="text-[10px] text-[#7ed957] font-black uppercase tracking-wider">✓ Concluída</span>
+                                        </template>
+                                        <template x-if="!rodada.concluida && rodada.numero > 1 && pedido.status === 'preparo'">
+                                            <span class="text-[9px] font-black bg-[#efa324] text-black px-1.5 py-0.5 rounded uppercase">Nova</span>
                                         </template>
                                     </div>
-                                    <span class="font-mono text-2xl px-3 py-2 rounded-lg font-black min-w-[3rem] text-center transition-colors duration-300"
-                                        :class="{ 'bg-[#efa324] text-black shadow-[0_0_15px_rgba(239,163,36,0.4)] scale-110': isItemNew(item, pedido), 'bg-[#0c0c0e] text-[#7ed957] border border-gray-800': !isItemNew(item, pedido) }"
-                                        x-text="item.quantidade"></span>
-                                </li>
-                            </template>
-                        </ul>
-                    </div>
+                                    {{-- Contador de progresso (X/Y prontos) --}}
+                                    <template x-if="!rodada.concluida && rodada.itens.filter(i => i.status === 'pronto').length > 0">
+                                        <span class="text-[11px] font-black tabular-nums"
+                                              :class="rodada.itens.filter(i => i.status === 'pronto').length === rodada.itens.length ? 'text-[#7ed957]' : 'text-gray-500'"
+                                              x-text="rodada.itens.filter(i => i.status === 'pronto').length + '/' + rodada.itens.length + ' prontos'"></span>
+                                    </template>
+                                </div>
 
-                    {{-- FOOTER DO CARD (BOTÃO) --}}
-                    <div class="p-3 mt-auto bg-[#0c0c0e]/50 border-t border-gray-800 flex flex-col gap-3 shrink-0">
-                        <button @click="avancarStatus(pedido)" 
-                                class="w-full py-4 rounded-lg font-black uppercase tracking-widest text-sm transition-all active:scale-[0.98] shadow-lg flex items-center justify-center gap-2"
-                                :class="{ 'bg-[#2a2a30] hover:bg-[#33333a] text-white border border-gray-700': pedido.status === 'pendente', 'bg-[#bf7854] hover:bg-[#a66545] text-white shadow-[#bf7854]/20': pedido.status === 'preparo' }">
-                            <span x-text="pedido.status === 'pendente' ? __t('start_prep') : __t('finish_order')"></span>
-                        </button>
+                                {{-- Itens da rodada --}}
+                                <ul>
+                                    <template x-for="item in rodada.itens" :key="item.id">
+                                        <li class="flex justify-between items-center gap-3 px-2 py-3 border-b border-gray-700/40 last:border-b-0 transition-all duration-300"
+                                            :class="item.status === 'pronto' && rodada.itens.some(i => i.status !== 'pronto') ? 'bg-jr-green/5' : ''">
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-center gap-2 flex-wrap">
+                                                    <span class="text-xl md:text-2xl font-bold leading-tight"
+                                                          :class="item.status === 'pronto' ? 'line-through text-gray-600' : 'text-gray-200'"
+                                                          x-text="item.nome_produto"></span>
+                                                </div>
+                                                <div x-show="item.observacao && item.status !== 'pronto'"
+                                                     class="text-sm font-bold bg-gray-800 text-jr-orange px-2 py-1 rounded inline-block mt-1 shadow-sm"
+                                                     x-text="item.observacao ? '⚠️ ' + item.observacao : ''"></div>
+                                            </div>
+                                            <button class="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 select-none"
+                                                    :class="[
+                                                        item.status === 'pronto' && rodada.itens.some(i => i.status !== 'pronto')
+                                                            ? 'bg-jr-green/15 border border-jr-green/30'
+                                                            : (item.status === 'pronto'
+                                                                ? 'bg-kds-bg border border-gray-800'
+                                                                : 'bg-kds-bg text-jr-green border border-gray-800 font-mono font-black text-2xl'),
+                                                        pedido.status === 'preparo' && rodadaEstaIniciada(pedido.id, rodada.numero)
+                                                            ? 'cursor-pointer active:scale-75 hover:opacity-80'
+                                                            : 'cursor-default'
+                                                    ]"
+                                                    @click="pedido.status === 'preparo' && rodadaEstaIniciada(pedido.id, rodada.numero) && toggleItemPronto(pedido.id, item.id)"
+                                                    :title="pedido.status === 'preparo' ? (item.status === 'pronto' ? 'Marcar como pendente' : 'Marcar como pronto') : ''">
+                                                <svg x-show="item.status === 'pronto' && rodada.itens.some(i => i.status !== 'pronto')" class="w-5 h-5 text-jr-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                <span x-show="item.status !== 'pronto'" x-text="item.quantidade"></span>
+                                            </button>
+                                        </li>
+                                    </template>
+                                </ul>
+
+                                {{-- Botão de ação da rodada --}}
+                                <div class="mt-4"
+                                     x-show="!rodada.concluida">
+
+                                    {{-- ESTADO 1: Pedido pendente → Iniciar Preparo (rodada 1 apenas) --}}
+                                    <template x-if="pedido.status === 'pendente'">
+                                        <button @click="iniciarPreparo(pedido)"
+                                                class="w-full py-4 rounded-lg font-black uppercase tracking-widest text-sm transition-all active:scale-[0.98] shadow-lg flex items-center justify-center gap-2 bg-[#2a2a30] hover:bg-[#33333a] text-white border border-gray-700">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <span x-text="__t('start_prep')"></span>
+                                        </button>
+                                    </template>
+
+                                    {{-- ESTADO 2: Em preparo, rodada ainda não iniciada → Iniciar Rodada X --}}
+                                    <template x-if="pedido.status === 'preparo' && !rodadaEstaIniciada(pedido.id, rodada.numero)">
+                                        <button @click="iniciarRodada(pedido.id, rodada.numero)"
+                                                class="w-full py-4 rounded-lg font-black uppercase tracking-widest text-sm transition-all active:scale-[0.98] shadow-lg flex items-center justify-center gap-2 bg-[#2a2a30] hover:bg-[#33333a] text-white border border-gray-700">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <span x-text="'INICIAR RODADA ' + rodada.numero"></span>
+                                        </button>
+                                    </template>
+
+                                    {{-- ESTADO 3: Em preparo, rodada iniciada → Finalizar --}}
+                                    <template x-if="pedido.status === 'preparo' && rodadaEstaIniciada(pedido.id, rodada.numero)">
+                                        <div>
+                                            <template x-if="!rodadaEstaFinalizando(pedido.id, rodada.numero)">
+                                                <button @click="iniciarFinalizacaoRodada(pedido, rodada.numero)"
+                                                        class="w-full py-3 rounded-lg font-black uppercase tracking-widest text-sm transition-all active:scale-[0.98] shadow-lg flex items-center justify-center"
+                                                        :class="todosItensDaEstacaoProntos(rodada)
+                                                            ? 'bg-jr-green hover:bg-[#6ec24a] text-black shadow-jr-green/20 animate-pulse'
+                                                            : 'bg-[#bf7854] hover:bg-[#a66545] text-white shadow-[#bf7854]/20'">
+                                                    <span x-text="todosItensDaEstacaoProntos(rodada) ? '✔ CONFIRMAR PRONTO' : getLabelBotaoFinalizar(rodada.numero, getRodadas(pedido).length)"></span>
+                                                </button>
+                                            </template>
+                                            <template x-if="rodadaEstaFinalizando(pedido.id, rodada.numero)">
+                                                <div class="w-full py-3 rounded-lg bg-[#27272a] border border-gray-700 text-gray-400 text-sm font-bold text-center uppercase tracking-widest">
+                                                    Finalizando...
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
                     </div>
                 </div>
             </template>
@@ -185,7 +266,12 @@
                 </div>
                 <div>
                     <p class="text-gray-400 text-[10px] font-bold uppercase tracking-widest" x-text="__t('finishing')"></p>
-                    <p class="text-xl font-black leading-none mt-0.5 text-white"><span x-text="__t('table').toUpperCase()"></span> <span x-text="undoData?.mesa"></span></p>
+                    <p class="text-xl font-black leading-none mt-0.5 text-white">
+                        <span x-text="__t('table').toUpperCase()"></span> <span x-text="undoData?.mesa"></span>
+                        <template x-if="undoData?.rodada > 1">
+                            <span class="text-sm font-bold text-[#efa324] ml-2" x-text="'· Rodada ' + undoData?.rodada"></span>
+                        </template>
+                    </p>
                 </div>
             </div>
             <button @click="desfazerFinalizacao()" class="bg-[#7ed957] text-black hover:bg-[#6ec24a] active:scale-95 transition-all px-6 py-2.5 rounded-xl font-black text-sm uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-[#7ed957]/20">

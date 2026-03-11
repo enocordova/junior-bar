@@ -178,21 +178,26 @@
                             </div>
                             <ul class="space-y-2">
                                 <template x-for="item in pedido.itens" :key="item.id">
-                                    <li class="flex justify-between items-start">
-                                        <div class="flex gap-3">
-                                            <span class="font-bold text-gray-400" x-text="item.quantidade + 'x'"></span>
-                                            <div>
-                                                <span class="text-gray-200 font-medium text-sm block" x-text="item.nome_produto"></span>
-                                                <template x-if="item.observacao">
+                                    <li class="flex justify-between items-center gap-2 transition-all duration-300"
+                                        :class="item.status === 'pronto' ? 'opacity-60' : ''">
+                                        <div class="flex gap-3 flex-1 min-w-0">
+                                            <span class="font-bold text-gray-400 shrink-0" x-text="item.quantidade + 'x'"></span>
+                                            <div class="min-w-0">
+                                                <span class="font-medium text-sm block"
+                                                      :class="item.status === 'pronto' ? 'line-through text-gray-500' : 'text-gray-200'"
+                                                      x-text="item.nome_produto"></span>
+                                                <template x-if="item.observacao && item.status !== 'pronto'">
                                                     <div class="text-[10px] text-[#efa324] font-bold mt-0.5 flex items-center gap-1">
                                                         <span>⚠️</span> <span x-text="item.observacao"></span>
                                                     </div>
                                                 </template>
                                             </div>
                                         </div>
-                                        <template x-if="pedido.status === 'pronto'">
-                                            <svg class="w-5 h-5 text-[#7ed957]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                        </template>
+                                        <span x-show="item.status === 'pronto' && pedido.itens.some(i => i.status !== 'pronto')"
+                                              class="shrink-0 text-[10px] font-black bg-jr-green/15 text-jr-green border border-jr-green/30 px-1.5 py-0.5 rounded uppercase tracking-wider flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+                                            Pronto
+                                        </span>
                                     </li>
                                 </template>
                             </ul>

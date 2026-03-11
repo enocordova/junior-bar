@@ -29,6 +29,8 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::middleware(['role:cozinha,admin'])->group(function () {
         Route::get('/pedidos-ativos', [PedidoController::class, 'listarAtivos']);
         Route::post('/atualizar-status/{id}', [PedidoController::class, 'atualizarStatus']);
+        Route::post('/finalizar-rodada/{pedido}/{rodada}', [PedidoController::class, 'finalizarRodada']);
+        Route::post('/item/{item}/toggle-pronto', [PedidoController::class, 'toggleItemPronto']);
         Route::post('/cancelar-pedido/{id}', [PedidoController::class, 'cancelar']);
     });
 

@@ -13,12 +13,14 @@ class PedidoItem extends Model
     
     // Campos que podem ser preenchidos
     protected $fillable = [
-        'pedido_id', 
-        'nome_produto', 
-        'quantidade', 
+        'pedido_id',
+        'nome_produto',
+        'quantidade',
         'observacao',
         'preco',
-        'categoria'
+        'categoria',
+        'rodada',
+        'status'
     ];
 
     protected $casts = [
